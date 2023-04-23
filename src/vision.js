@@ -6,7 +6,7 @@ const colorRanges = {
     maxHue: 179,
     minSat: 0,
     maxSat: 75,
-    minVal: 125,
+    minVal: 150,
     maxVal: 255,
     minAlp: 0,
     maxAlp: 0,
@@ -71,7 +71,7 @@ const frameDelay = 1000 / FPS;
 const canvasEl = document.createElement("canvas");
 canvasEl.width = width;
 canvasEl.height = height;
-// document.body.appendChild(canvasEl);
+document.body.appendChild(canvasEl);
 const context = canvasEl.getContext("2d", { willReadFrequently: true });
 context.strokeStyle = "green";
 context.lineWidth = 2;
@@ -121,7 +121,8 @@ export function scan() {
     if (face === null) setTimeout(async () => res(await scan()), frameDelay);
     else {
       stopCamera();
-      res(face);
+      setTimeout(async () => res(face), 1000);
+      // res(face);
     }
   });
 }
@@ -169,7 +170,7 @@ function getCells(hsv, color, colorRange) {
 
   const dst = new cv.Mat();
   cv.bitwise_and(hsv, hsv, dst, mask);
-  if (color === "ORANGE") cv.imshow(canvasOutputEl, dst);
+  if (color === "WHITE") cv.imshow(canvasOutputEl, dst);
   dst.delete();
 
   const contours = new cv.MatVector();
