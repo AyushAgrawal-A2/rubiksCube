@@ -2,11 +2,11 @@ import cv from "./opencv.js";
 
 const colorRanges = {
   WHITE: {
-    minHue: 95,
-    maxHue: 125,
+    minHue: 75,
+    maxHue: 130,
     minSat: 0,
     maxSat: 40,
-    minVal: 150,
+    minVal: 140,
     maxVal: 255,
     minAlp: 0,
     maxAlp: 0,
@@ -87,12 +87,12 @@ const videoEl = document.createElement("video");
 
 const confirmButtonEl = document.querySelector("#confirm");
 const rescanButtonEl = document.querySelector("#rescan");
-// const trackbars = document.querySelectorAll("input");
-// const valuesEl = document.querySelector("#values");
+const trackbars = document.querySelectorAll("input");
+const valuesEl = document.querySelector("#values");
 
 function startCamera() {
   if (stream !== null) return;
-  stream = 0;
+  stream = [];
   navigator.mediaDevices
     .getUserMedia({
       video: {
@@ -116,7 +116,7 @@ function startCamera() {
 }
 
 function stopCamera() {
-  stream.getTracks().forEach((track) => track.stop());
+  stream?.getTracks()?.forEach((track) => track.stop());
   stream = null;
 }
 
@@ -175,43 +175,43 @@ function captureFace() {
 }
 
 function getCells(hsv, color, colorRange) {
-  const low = new cv.Mat(hsv.rows, hsv.cols, hsv.type(), [
-    colorRange.minHue,
-    colorRange.minSat,
-    colorRange.minVal,
-    colorRange.minAlp,
-  ]);
-  const high = new cv.Mat(hsv.rows, hsv.cols, hsv.type(), [
-    colorRange.maxHue,
-    colorRange.maxSat,
-    colorRange.maxVal,
-    colorRange.maxAlp,
-  ]);
-
   // const low = new cv.Mat(hsv.rows, hsv.cols, hsv.type(), [
-  //   parseInt(trackbars[0].value),
-  //   parseInt(trackbars[2].value),
-  //   parseInt(trackbars[4].value),
+  //   colorRange.minHue,
+  //   colorRange.minSat,
+  //   colorRange.minVal,
   //   colorRange.minAlp,
   // ]);
   // const high = new cv.Mat(hsv.rows, hsv.cols, hsv.type(), [
-  //   parseInt(trackbars[1].value),
-  //   parseInt(trackbars[3].value),
-  //   parseInt(trackbars[5].value),
+  //   colorRange.maxHue,
+  //   colorRange.maxSat,
+  //   colorRange.maxVal,
   //   colorRange.maxAlp,
   // ]);
-  // valuesEl.textContent =
-  //   trackbars[0].value +
-  //   " " +
-  //   trackbars[1].value +
-  //   " " +
-  //   trackbars[2].value +
-  //   " " +
-  //   trackbars[3].value +
-  //   " " +
-  //   trackbars[4].value +
-  //   " " +
-  //   trackbars[5].value;
+
+  const low = new cv.Mat(hsv.rows, hsv.cols, hsv.type(), [
+    parseInt(trackbars[0].value),
+    parseInt(trackbars[2].value),
+    parseInt(trackbars[4].value),
+    colorRange.minAlp,
+  ]);
+  const high = new cv.Mat(hsv.rows, hsv.cols, hsv.type(), [
+    parseInt(trackbars[1].value),
+    parseInt(trackbars[3].value),
+    parseInt(trackbars[5].value),
+    colorRange.maxAlp,
+  ]);
+  valuesEl.textContent =
+    trackbars[0].value +
+    " " +
+    trackbars[1].value +
+    " " +
+    trackbars[2].value +
+    " " +
+    trackbars[3].value +
+    " " +
+    trackbars[4].value +
+    " " +
+    trackbars[5].value;
 
   const mask = new cv.Mat();
   cv.inRange(hsv, low, high, mask);
