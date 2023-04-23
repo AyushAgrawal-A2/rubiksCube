@@ -1,3 +1,4 @@
+import "./opencv.js";
 const colorRanges = {
   WHITE: {
     minHue: 0,
@@ -74,14 +75,13 @@ const context = canvasEl.getContext("2d", { willReadFrequently: true });
 context.strokeStyle = "green";
 context.lineWidth = 2;
 
-const canvasOutputEl = document.createElement("canvas");
-canvasOutputEl.width = width;
-canvasOutputEl.height = height;
-document.body.appendChild(canvasOutputEl);
+// const canvasOutputEl = document.createElement("canvas");
+// canvasOutputEl.width = width;
+// canvasOutputEl.height = height;
+// document.body.appendChild(canvasOutputEl);
 
 let stream = null;
 const videoEl = document.createElement("video");
-const src = new cv.Mat(height, width, cv.CV_8UC4);
 
 function startCamera() {
   if (stream !== null) return;
@@ -118,6 +118,7 @@ export function scan() {
 
 function captureFace() {
   context.drawImage(videoEl, 0, 0, width, height);
+  const src = new cv.Mat(height, width, cv.CV_8UC4);
   src.data.set(context.getImageData(0, 0, width, height).data);
   const hsv = new cv.Mat();
   cv.cvtColor(src, hsv, cv.COLOR_RGB2HSV, 0);
@@ -156,10 +157,10 @@ function getCells(hsv, color, colorRange) {
   low.delete();
   high.delete();
 
-  const dst = new cv.Mat();
-  cv.bitwise_and(hsv, hsv, dst, mask);
-  if (color === "WHITE") cv.imshow(canvasOutputEl, dst);
-  dst.delete();
+  // const dst = new cv.Mat();
+  // cv.bitwise_and(hsv, hsv, dst, mask);
+  // if (color === "WHITE") cv.imshow(canvasOutputEl, dst);
+  // dst.delete();
 
   const contours = new cv.MatVector();
   const hierarchy = new cv.Mat();
