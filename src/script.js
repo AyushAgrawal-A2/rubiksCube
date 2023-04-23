@@ -1,14 +1,19 @@
 import { scan } from "./vision.js";
-import "./cube.js";
+import { solveCube } from "./cube.js";
 
 const scanButtonEl = document.querySelector("#scan");
+const solveButtonEl = document.querySelector("#solve");
+const solutionEl = document.querySelector("#solution");
 scanButtonEl.addEventListener("click", scanFaces);
+solveButtonEl.addEventListener("click", () => {
+  solveCube(faces, solutionEl);
+});
 
 const faces = {
   FRONT: null,
   LEFT: null,
-  TOP: null,
-  BOTTOM: null,
+  UP: null,
+  DOWN: null,
   RIGHT: null,
   BACK: null,
 };
