@@ -21,16 +21,6 @@ const colorRanges = {
     minAlp: 0,
     maxAlp: 255,
   },
-  RED_END: {
-    minHue: 169,
-    maxHue: 179,
-    minSat: 75,
-    maxSat: 255,
-    minVal: 75,
-    maxVal: 255,
-    minAlp: 0,
-    maxAlp: 255,
-  },
   ORANGE: {
     minHue: 3,
     maxHue: 20,
@@ -73,6 +63,17 @@ const colorRanges = {
   },
 };
 
+const RED_END = {
+  minHue: 169,
+  maxHue: 179,
+  minSat: 75,
+  maxSat: 255,
+  minVal: 75,
+  maxVal: 255,
+  minAlp: 0,
+  maxAlp: 255,
+};
+
 const width = 640;
 const height = 640;
 const FPS = 30;
@@ -97,8 +98,8 @@ const videoEl = document.createElement("video");
 
 const confirmButtonEl = document.querySelector("#confirm");
 const rescanButtonEl = document.querySelector("#rescan");
-// const trackbars = document.querySelectorAll("input");
-// const valuesEl = document.querySelector("#values");
+const trackbars = document.querySelectorAll("input");
+const valuesEl = document.querySelector("#values");
 
 function startCamera() {
   if (stream !== null) return;
@@ -180,44 +181,44 @@ function captureFace() {
 }
 
 function getCells(hsv, color) {
-  let colorRange = colorRanges[color];
-  const low = new cv.Mat(hsv.rows, hsv.cols, hsv.type(), [
-    colorRange.minHue,
-    colorRange.minSat,
-    colorRange.minVal,
-    colorRange.minAlp,
-  ]);
-  const high = new cv.Mat(hsv.rows, hsv.cols, hsv.type(), [
-    colorRange.maxHue,
-    colorRange.maxSat,
-    colorRange.maxVal,
-    colorRange.maxAlp,
-  ]);
-
+  const colorRange = colorRanges[color];
   // const low = new cv.Mat(hsv.rows, hsv.cols, hsv.type(), [
-  //   parseInt(trackbars[0].value),
-  //   parseInt(trackbars[2].value),
-  //   parseInt(trackbars[4].value),
+  //   colorRange.minHue,
+  //   colorRange.minSat,
+  //   colorRange.minVal,
   //   colorRange.minAlp,
   // ]);
   // const high = new cv.Mat(hsv.rows, hsv.cols, hsv.type(), [
-  //   parseInt(trackbars[1].value),
-  //   parseInt(trackbars[3].value),
-  //   parseInt(trackbars[5].value),
+  //   colorRange.maxHue,
+  //   colorRange.maxSat,
+  //   colorRange.maxVal,
   //   colorRange.maxAlp,
   // ]);
-  // valuesEl.textContent =
-  //   trackbars[0].value +
-  //   " " +
-  //   trackbars[1].value +
-  //   " " +
-  //   trackbars[2].value +
-  //   " " +
-  //   trackbars[3].value +
-  //   " " +
-  //   trackbars[4].value +
-  //   " " +
-  //   trackbars[5].value;
+
+  const low = new cv.Mat(hsv.rows, hsv.cols, hsv.type(), [
+    parseInt(trackbars[0].value),
+    parseInt(trackbars[2].value),
+    parseInt(trackbars[4].value),
+    colorRange.minAlp,
+  ]);
+  const high = new cv.Mat(hsv.rows, hsv.cols, hsv.type(), [
+    parseInt(trackbars[1].value),
+    parseInt(trackbars[3].value),
+    parseInt(trackbars[5].value),
+    colorRange.maxAlp,
+  ]);
+  valuesEl.textContent =
+    trackbars[0].value +
+    " " +
+    trackbars[1].value +
+    " " +
+    trackbars[2].value +
+    " " +
+    trackbars[3].value +
+    " " +
+    trackbars[4].value +
+    " " +
+    trackbars[5].value;
 
   const mask = new cv.Mat();
   cv.inRange(hsv, low, high, mask);
@@ -225,30 +226,29 @@ function getCells(hsv, color) {
   high.delete();
 
   if (color === "RED") {
-    colorRange = colorRanges.RED_END;
-    const low = new cv.Mat(hsv.rows, hsv.cols, hsv.type(), [
-      colorRange.minHue,
-      colorRange.minSat,
-      colorRange.minVal,
-      colorRange.minAlp,
+    const low_end = new cv.Mat(hsv.rows, hsv.cols, hsv.type(), [
+      RED_END.minHue,
+      RED_END.minSat,
+      RED_END.minVal,
+      RED_END.minAlp,
     ]);
-    const high = new cv.Mat(hsv.rows, hsv.cols, hsv.type(), [
-      colorRange.maxHue,
-      colorRange.maxSat,
-      colorRange.maxVal,
-      colorRange.maxAlp,
+    const high_end = new cv.Mat(hsv.rows, hsv.cols, hsv.type(), [
+      RED_END.maxHue,
+      RED_END.maxSat,
+      RED_END.maxVal,
+      RED_END.maxAlp,
     ]);
     const mask_end = new cv.Mat();
-    cv.inRange(hsv, low, high, mask_end);
+    cv.inRange(hsv, low_end, high_end, mask_end);
     cv.bitwise_or(mask, mask_end, mask);
-    low.delete();
-    high.delete();
+    low_end.delete();
+    high_end.delete();
     mask_end.delete();
   }
 
   const dst = new cv.Mat();
   cv.bitwise_and(hsv, hsv, dst, mask);
-  if (color === "RED") cv.imshow(canvasOutputEl, dst);
+  if (color === "BLUE") cv.imshow(canvasOutputEl, dst);
   dst.delete();
 
   const contours = new cv.MatVector();
