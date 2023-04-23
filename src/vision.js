@@ -1,4 +1,5 @@
-import "./opencv.js";
+import cv from "./opencv.js";
+
 const colorRanges = {
   WHITE: {
     minHue: 0,
