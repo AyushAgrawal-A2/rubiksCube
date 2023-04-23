@@ -1,8 +1,8 @@
 import { scan } from "./vision.js";
 import "./cube.js";
 
-const scanEl = document.querySelector("#scan");
-scanEl.addEventListener("click", scanFaces);
+const scanButtonEl = document.querySelector("#scan");
+scanButtonEl.addEventListener("click", scanFaces);
 
 const faces = {
   FRONT: null,
