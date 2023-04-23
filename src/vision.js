@@ -2,8 +2,8 @@ import cv from "./opencv.js";
 
 const colorRanges = {
   WHITE: {
-    minHue: 75,
-    maxHue: 130,
+    minHue: 10,
+    maxHue: 179,
     minSat: 0,
     maxSat: 40,
     minVal: 140,
@@ -77,18 +77,18 @@ context.strokeStyle = "black";
 context.lineWidth = 1;
 context.font = "16px Arial";
 
-const canvasOutputEl = document.createElement("canvas");
-canvasOutputEl.width = width;
-canvasOutputEl.height = height;
-document.body.appendChild(canvasOutputEl);
+// const canvasOutputEl = document.createElement("canvas");
+// canvasOutputEl.width = width;
+// canvasOutputEl.height = height;
+// document.body.appendChild(canvasOutputEl);
 
 let stream = null;
 const videoEl = document.createElement("video");
 
 const confirmButtonEl = document.querySelector("#confirm");
 const rescanButtonEl = document.querySelector("#rescan");
-const trackbars = document.querySelectorAll("input");
-const valuesEl = document.querySelector("#values");
+// const trackbars = document.querySelectorAll("input");
+// const valuesEl = document.querySelector("#values");
 
 function startCamera() {
   if (stream !== null) return;
@@ -126,16 +126,9 @@ export function scan() {
     const face = captureFace();
     if (face === null) scanLoop(res);
     else {
-      confirmButtonEl.addEventListener(
-        "click",
-        () => {
-          stopCamera();
-          res(face);
-        },
-        {
-          once: true,
-        }
-      );
+      confirmButtonEl.addEventListener("click", () => comfirmScan(res), {
+        once: true,
+      });
       rescanButtonEl.addEventListener("click", () => scanLoop(res), {
         once: true,
       });
@@ -147,7 +140,10 @@ function scanLoop(res) {
   setTimeout(async () => res(await scan()), frameDelay);
 }
 
-function comfirmScan() {}
+function comfirmScan(res) {
+  stopCamera();
+  res(face);
+}
 
 function captureFace() {
   context.drawImage(videoEl, 0, 0, width, height);
@@ -165,7 +161,6 @@ function captureFace() {
   for (const { x, y, width, height, color } of squares) {
     context.strokeRect(x, y, width, height);
     context.strokeText(color, x + 10, y + 25);
-    context.strokeText(`Area = ${width * height}`, x + 10, y + height / 2);
   }
 
   hsv.delete();
@@ -175,53 +170,53 @@ function captureFace() {
 }
 
 function getCells(hsv, color, colorRange) {
-  // const low = new cv.Mat(hsv.rows, hsv.cols, hsv.type(), [
-  //   colorRange.minHue,
-  //   colorRange.minSat,
-  //   colorRange.minVal,
-  //   colorRange.minAlp,
-  // ]);
-  // const high = new cv.Mat(hsv.rows, hsv.cols, hsv.type(), [
-  //   colorRange.maxHue,
-  //   colorRange.maxSat,
-  //   colorRange.maxVal,
-  //   colorRange.maxAlp,
-  // ]);
-
   const low = new cv.Mat(hsv.rows, hsv.cols, hsv.type(), [
-    parseInt(trackbars[0].value),
-    parseInt(trackbars[2].value),
-    parseInt(trackbars[4].value),
+    colorRange.minHue,
+    colorRange.minSat,
+    colorRange.minVal,
     colorRange.minAlp,
   ]);
   const high = new cv.Mat(hsv.rows, hsv.cols, hsv.type(), [
-    parseInt(trackbars[1].value),
-    parseInt(trackbars[3].value),
-    parseInt(trackbars[5].value),
+    colorRange.maxHue,
+    colorRange.maxSat,
+    colorRange.maxVal,
     colorRange.maxAlp,
   ]);
-  valuesEl.textContent =
-    trackbars[0].value +
-    " " +
-    trackbars[1].value +
-    " " +
-    trackbars[2].value +
-    " " +
-    trackbars[3].value +
-    " " +
-    trackbars[4].value +
-    " " +
-    trackbars[5].value;
+
+  // const low = new cv.Mat(hsv.rows, hsv.cols, hsv.type(), [
+  //   parseInt(trackbars[0].value),
+  //   parseInt(trackbars[2].value),
+  //   parseInt(trackbars[4].value),
+  //   colorRange.minAlp,
+  // ]);
+  // const high = new cv.Mat(hsv.rows, hsv.cols, hsv.type(), [
+  //   parseInt(trackbars[1].value),
+  //   parseInt(trackbars[3].value),
+  //   parseInt(trackbars[5].value),
+  //   colorRange.maxAlp,
+  // ]);
+  // valuesEl.textContent =
+  //   trackbars[0].value +
+  //   " " +
+  //   trackbars[1].value +
+  //   " " +
+  //   trackbars[2].value +
+  //   " " +
+  //   trackbars[3].value +
+  //   " " +
+  //   trackbars[4].value +
+  //   " " +
+  //   trackbars[5].value;
 
   const mask = new cv.Mat();
   cv.inRange(hsv, low, high, mask);
   low.delete();
   high.delete();
 
-  const dst = new cv.Mat();
-  cv.bitwise_and(hsv, hsv, dst, mask);
-  if (color === "ORANGE") cv.imshow(canvasOutputEl, dst);
-  dst.delete();
+  // const dst = new cv.Mat();
+  // cv.bitwise_and(hsv, hsv, dst, mask);
+  // if (color === "ORANGE") cv.imshow(canvasOutputEl, dst);
+  // dst.delete();
 
   const contours = new cv.MatVector();
   const hierarchy = new cv.Mat();
