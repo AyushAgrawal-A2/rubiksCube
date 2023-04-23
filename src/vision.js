@@ -88,7 +88,16 @@ function startCamera() {
   if (stream !== null) return;
   stream = 0;
   navigator.mediaDevices
-    .getUserMedia({ video: { width, height }, audio: false })
+    .getUserMedia({
+      video: {
+        width,
+        height,
+        facingMode: {
+          ideal: "environment",
+        },
+      },
+      audio: false,
+    })
     .then(function (str) {
       stream = str;
       videoEl.srcObject = stream;
