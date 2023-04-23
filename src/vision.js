@@ -23,7 +23,7 @@ const colorRanges = {
   },
   ORANGE: {
     minHue: 5,
-    maxHue: 15,
+    maxHue: 20,
     minSat: 75,
     maxSat: 255,
     minVal: 75,
@@ -32,7 +32,7 @@ const colorRanges = {
     maxAlp: 0,
   },
   YELLOW: {
-    minHue: 15,
+    minHue: 20,
     maxHue: 45,
     minSat: 75,
     maxSat: 255,
@@ -71,7 +71,7 @@ const frameDelay = 1000 / FPS;
 const canvasEl = document.createElement("canvas");
 canvasEl.width = width;
 canvasEl.height = height;
-document.body.appendChild(canvasEl);
+// document.body.appendChild(canvasEl);
 const context = canvasEl.getContext("2d", { willReadFrequently: true });
 context.strokeStyle = "green";
 context.lineWidth = 2;
@@ -169,7 +169,7 @@ function getCells(hsv, color, colorRange) {
 
   const dst = new cv.Mat();
   cv.bitwise_and(hsv, hsv, dst, mask);
-  if (color === "YELLOW") cv.imshow(canvasOutputEl, dst);
+  if (color === "ORANGE") cv.imshow(canvasOutputEl, dst);
   dst.delete();
 
   const contours = new cv.MatVector();
