@@ -6,7 +6,7 @@ const colorRanges = {
     maxHue: 179,
     minSat: 0,
     maxSat: 75,
-    minVal: 150,
+    minVal: 175,
     maxVal: 255,
     minAlp: 0,
     maxAlp: 0,
@@ -74,7 +74,8 @@ canvasEl.height = height;
 document.body.appendChild(canvasEl);
 const context = canvasEl.getContext("2d", { willReadFrequently: true });
 context.strokeStyle = "green";
-context.lineWidth = 2;
+context.lineWidth = 1;
+context.font = "16px Arial";
 
 const canvasOutputEl = document.createElement("canvas");
 canvasOutputEl.width = width;
@@ -141,13 +142,15 @@ function captureFace() {
 
   for (const { x, y, width, height, color } of squares) {
     context.strokeRect(x, y, width, height);
-    context.strokeText(color, x, y);
+    context.strokeText(color, x + 10, y + height / 3);
+    context.strokeText(`Area = ${width * height}`, x + 10, y + height / 2);
   }
 
   hsv.delete();
 
-  if (squares.length === 9) return processSquares(squares);
-  else return null;
+  // if (squares.length === 9) return processSquares(squares);
+  // else
+  return null;
 }
 
 function getCells(hsv, color, colorRange) {
