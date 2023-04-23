@@ -63,8 +63,8 @@ const colorRanges = {
   },
 };
 
-const width = 480;
-const height = 480;
+const width = 720;
+const height = 720;
 const FPS = 30;
 const frameDelay = 1000 / FPS;
 
@@ -76,10 +76,10 @@ const context = canvasEl.getContext("2d", { willReadFrequently: true });
 context.strokeStyle = "green";
 context.lineWidth = 2;
 
-// const canvasOutputEl = document.createElement("canvas");
-// canvasOutputEl.width = width;
-// canvasOutputEl.height = height;
-// document.body.appendChild(canvasOutputEl);
+const canvasOutputEl = document.createElement("canvas");
+canvasOutputEl.width = width;
+canvasOutputEl.height = height;
+document.body.appendChild(canvasOutputEl);
 
 let stream = null;
 const videoEl = document.createElement("video");
@@ -167,10 +167,10 @@ function getCells(hsv, color, colorRange) {
   low.delete();
   high.delete();
 
-  // const dst = new cv.Mat();
-  // cv.bitwise_and(hsv, hsv, dst, mask);
-  // if (color === "WHITE") cv.imshow(canvasOutputEl, dst);
-  // dst.delete();
+  const dst = new cv.Mat();
+  cv.bitwise_and(hsv, hsv, dst, mask);
+  if (color === "YELLOW") cv.imshow(canvasOutputEl, dst);
+  dst.delete();
 
   const contours = new cv.MatVector();
   const hierarchy = new cv.Mat();
