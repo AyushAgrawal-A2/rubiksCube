@@ -2,3 +2,16 @@
   margin: 0;
   box-sizing: border-box;
 }
+
+#trackbar {
+  position: absolute;
+  top: 0;
+}
+
+button {
+  margin: 1rem;
+}
+
+input {
+  width: 100vw;
+}

@@ -11,7 +11,19 @@
 </head>
 
 <body>
-  <button id="scan">Scan</button>
+
+  <div id="controls">
+    <button id="scan">Scan</button>
+    <button id="rescan">Re-Scan</button>
+    <button id="confirm">Confirm</button>
+    <input type="range" min="0" max="179" value="0" step="1">Hue Min</input>
+    <input type="range" min="0" max="179" value="179" step="1">Hue Max</input>
+    <input type="range" min="0" max="255" value="75" step="5">Sat Min</input>
+    <input type="range" min="0" max="255" value="255" step="5">Sat Max</input>
+    <input type="range" min="0" max="255" value="75" step="5">Val Min</input>
+    <input type="range" min="0" max="255" value="255" step="5">Val Max</input>
+    <div id="values"></div>
+  </div>
 </body>
 
 </html>

@@ -2,69 +2,69 @@ import cv from "./opencv.js";
 
 const colorRanges = {
   WHITE: {
-    minHue: 0,
-    maxHue: 179,
+    minHue: 95,
+    maxHue: 125,
     minSat: 0,
-    maxSat: 75,
+    maxSat: 40,
     minVal: 175,
     maxVal: 255,
     minAlp: 0,
     maxAlp: 0,
   },
-  RED: {
-    minHue: 0,
-    maxHue: 5,
-    minSat: 75,
-    maxSat: 255,
-    minVal: 75,
-    maxVal: 255,
-    minAlp: 0,
-    maxAlp: 0,
-  },
-  ORANGE: {
-    minHue: 5,
-    maxHue: 20,
-    minSat: 75,
-    maxSat: 255,
-    minVal: 75,
-    maxVal: 255,
-    minAlp: 0,
-    maxAlp: 0,
-  },
-  YELLOW: {
-    minHue: 20,
-    maxHue: 45,
-    minSat: 75,
-    maxSat: 255,
-    minVal: 75,
-    maxVal: 255,
-    minAlp: 0,
-    maxAlp: 0,
-  },
-  GREEN: {
-    minHue: 45,
-    maxHue: 100,
-    minSat: 75,
-    maxSat: 255,
-    minVal: 75,
-    maxVal: 255,
-    minAlp: 0,
-    maxAlp: 0,
-  },
-  BLUE: {
-    minHue: 100,
-    maxHue: 150,
-    minSat: 75,
-    maxSat: 255,
-    minVal: 75,
-    maxVal: 255,
-    minAlp: 0,
-    maxAlp: 0,
-  },
+  // RED: {
+  //   minHue: 0,
+  //   maxHue: 3,
+  //   minSat: 75,
+  //   maxSat: 255,
+  //   minVal: 75,
+  //   maxVal: 255,
+  //   minAlp: 0,
+  //   maxAlp: 0,
+  // },
+  // ORANGE: {
+  //   minHue: 3,
+  //   maxHue: 20,
+  //   minSat: 75,
+  //   maxSat: 255,
+  //   minVal: 75,
+  //   maxVal: 255,
+  //   minAlp: 0,
+  //   maxAlp: 0,
+  // },
+  // YELLOW: {
+  //   minHue: 20,
+  //   maxHue: 45,
+  //   minSat: 75,
+  //   maxSat: 255,
+  //   minVal: 75,
+  //   maxVal: 255,
+  //   minAlp: 0,
+  //   maxAlp: 0,
+  // },
+  // GREEN: {
+  //   minHue: 45,
+  //   maxHue: 100,
+  //   minSat: 75,
+  //   maxSat: 255,
+  //   minVal: 75,
+  //   maxVal: 255,
+  //   minAlp: 0,
+  //   maxAlp: 0,
+  // },
+  // BLUE: {
+  //   minHue: 100,
+  //   maxHue: 150,
+  //   minSat: 75,
+  //   maxSat: 255,
+  //   minVal: 75,
+  //   maxVal: 255,
+  //   minAlp: 0,
+  //   maxAlp: 0,
+  // },
 };
 
-const width = 720;
-const height = 720;
+const width = 640;
+const height = 640;
 const FPS = 30;
 const frameDelay = 1000 / FPS;
 
@@ -73,7 +73,7 @@ canvasEl.width = width;
 canvasEl.height = height;
 document.body.appendChild(canvasEl);
 const context = canvasEl.getContext("2d", { willReadFrequently: true });
-context.strokeStyle = "green";
+context.strokeStyle = "black";
 context.lineWidth = 1;
 context.font = "16px Arial";
 
@@ -84,6 +84,11 @@ document.body.appendChild(canvasOutputEl);
 
 let stream = null;
 const videoEl = document.createElement("video");
+
+const confirmButtonEl = document.querySelector("#confirm");
+const rescanButtonEl = document.querySelector("#rescan");
+const trackbars = document.querySelectorAll("input");
+const valuesEl = document.querySelector("#values");
 
 function startCamera() {
   if (stream !== null) return;
@@ -121,12 +126,26 @@ export function scan() {
     const face = captureFace();
     if (face === null) setTimeout(async () => res(await scan()), frameDelay);
     else {
-      stopCamera();
-      setTimeout(async () => res(face), 1000);
-      // res(face);
+      confirmButtonEl.addEventListener(
+        "click",
+        () => {
+          stopCamera();
+          res(face);
+        },
+        {
+          once: true,
+        }
+      );
+      rescanButtonEl.addEventListener(
+        "click",
+        () => setTimeout(async () => res(await scan()), frameDelay),
+        { once: true }
+      );
     }
   });
 }
+
+function comfirmScan() {}
 
 function captureFace() {
   context.drawImage(videoEl, 0, 0, width, height);
@@ -134,6 +153,7 @@ function captureFace() {
   src.data.set(context.getImageData(0, 0, width, height).data);
   const hsv = new cv.Mat();
   cv.cvtColor(src, hsv, cv.COLOR_RGB2HSV, 0);
+  src.delete();
 
   const squares = [];
   for (const key in colorRanges) {
@@ -142,30 +162,53 @@ function captureFace() {
 
   for (const { x, y, width, height, color } of squares) {
     context.strokeRect(x, y, width, height);
-    context.strokeText(color, x + 10, y + height / 3);
+    context.strokeText(color, x + 10, y + 25);
     context.strokeText(`Area = ${width * height}`, x + 10, y + height / 2);
   }
 
   hsv.delete();
 
-  // if (squares.length === 9) return processSquares(squares);
-  // else
-  return null;
+  if (squares.length === 9) return processSquares(squares);
+  else return null;
 }
 
 function getCells(hsv, color, colorRange) {
+  // const low = new cv.Mat(hsv.rows, hsv.cols, hsv.type(), [
+  //   colorRange.minHue,
+  //   colorRange.minSat,
+  //   colorRange.minVal,
+  //   colorRange.minAlp,
+  // ]);
+  // const high = new cv.Mat(hsv.rows, hsv.cols, hsv.type(), [
+  //   colorRange.maxHue,
+  //   colorRange.maxSat,
+  //   colorRange.maxVal,
+  //   colorRange.maxAlp,
+  // ]);
   const low = new cv.Mat(hsv.rows, hsv.cols, hsv.type(), [
-    colorRange.minHue,
-    colorRange.minSat,
-    colorRange.minVal,
+    parseInt(trackbars[0].value),
+    parseInt(trackbars[2].value),
+    parseInt(trackbars[4].value),
     colorRange.minAlp,
   ]);
   const high = new cv.Mat(hsv.rows, hsv.cols, hsv.type(), [
-    colorRange.maxHue,
-    colorRange.maxSat,
-    colorRange.maxVal,
+    parseInt(trackbars[1].value),
+    parseInt(trackbars[3].value),
+    parseInt(trackbars[5].value),
     colorRange.maxAlp,
   ]);
+  valuesEl.textContent =
+    trackbars[0].value +
+    " " +
+    trackbars[1].value +
+    " " +
+    trackbars[2].value +
+    " " +
+    trackbars[3].value +
+    " " +
+    trackbars[4].value +
+    " " +
+    trackbars[5].value;
   const mask = new cv.Mat();
   cv.inRange(hsv, low, high, mask);
   low.delete();
