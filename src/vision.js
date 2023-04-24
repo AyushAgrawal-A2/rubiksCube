@@ -1,78 +1,5 @@
+import { faces, colorRanges, RED_END } from "./constants";
 import cv from "./opencv.js";
-
-const colorRanges = {
-  WHITE: {
-    minHue: 10,
-    maxHue: 169,
-    minSat: 0,
-    maxSat: 40,
-    minVal: 140,
-    maxVal: 255,
-    minAlp: 0,
-    maxAlp: 0,
-  },
-  RED: {
-    minHue: 0,
-    maxHue: 3,
-    minSat: 75,
-    maxSat: 255,
-    minVal: 75,
-    maxVal: 255,
-    minAlp: 0,
-    maxAlp: 255,
-  },
-  ORANGE: {
-    minHue: 3,
-    maxHue: 20,
-    minSat: 125,
-    maxSat: 255,
-    minVal: 125,
-    maxVal: 255,
-    minAlp: 0,
-    maxAlp: 0,
-  },
-  YELLOW: {
-    minHue: 20,
-    maxHue: 45,
-    minSat: 75,
-    maxSat: 255,
-    minVal: 75,
-    maxVal: 255,
-    minAlp: 0,
-    maxAlp: 0,
-  },
-  GREEN: {
-    minHue: 45,
-    maxHue: 85,
-    minSat: 50,
-    maxSat: 255,
-    minVal: 75,
-    maxVal: 255,
-    minAlp: 0,
-    maxAlp: 0,
-  },
-  BLUE: {
-    minHue: 85,
-    maxHue: 135,
-    minSat: 75,
-    maxSat: 255,
-    minVal: 75,
-    maxVal: 255,
-    minAlp: 0,
-    maxAlp: 0,
-  },
-};
-
-const RED_END = {
-  minHue: 169,
-  maxHue: 179,
-  minSat: 75,
-  maxSat: 255,
-  minVal: 75,
-  maxVal: 255,
-  minAlp: 0,
-  maxAlp: 255,
-};
 
 const width = 640;
 const height = 640;
@@ -127,17 +54,25 @@ function startCamera() {
 }
 
 function stopCamera() {
-  stream?.getTracks()?.forEach((track) => track.stop());
+  stream?.getTracks?.().forEach((track) => track.stop());
   stream = null;
 }
 
-export function scan() {
+export async function scanFaces() {
+  for (let key in faces) {
+    console.log(key);
+    faces[key] = await scan();
+    console.log(faces[key]);
+  }
+}
+
+function scan() {
   startCamera();
   return new Promise((res, rej) => {
     const face = captureFace();
     if (face === null) scanLoop(res);
     else {
-      confirmButtonEl.addEventListener("click", () => comfirmScan(res), {
+      confirmButtonEl.addEventListener("click", () => comfirmScan(res, face), {
         once: true,
       });
       rescanButtonEl.addEventListener("click", () => scanLoop(res), {
@@ -151,7 +86,7 @@ function scanLoop(res) {
   setTimeout(async () => res(await scan()), frameDelay);
 }
 
-function comfirmScan(res) {
+function comfirmScan(res, face) {
   stopCamera();
   res(face);
 }
@@ -182,6 +117,7 @@ function captureFace() {
 
 function getCells(hsv, color) {
   const colorRange = colorRanges[color];
+
   const low = new cv.Mat(hsv.rows, hsv.cols, hsv.type(), [
     colorRange.minHue,
     colorRange.minSat,

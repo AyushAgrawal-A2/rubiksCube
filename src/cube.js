@@ -1,15 +1,16 @@
-import Cube from "cubejs";
-import { solve } from "kociemba-wasm";
-
-// let cube = "FFUUURDUUBFBLRDLDDRRRBFFFBBDUDDDBLLRUFBBLLFLLLDRRBRFUU";
-// Cube.random().asString();
-// console.log(cube);
+import { identityCubeState, colorMap } from "./constants";
+import { Cube, solve } from "kociemba-wasm";
 
 export async function solveCube(faces, solutionEl) {
+  // const cube = new Cube();
+  // const cubeState = cube.toString();
   const cubeState = facesToString(faces);
-  const output = await solve(cubeState);
+  console.log("Input: " + cubeState);
+  let output;
+  if (cubeState === identityCubeState) output = "Identity Cube";
+  else output = await solve(cubeState);
+  console.log("Output: " + output);
   solutionEl.textContent = output;
-  console.log(output.split(" "));
 }
 
 function facesToString(faces) {
@@ -26,14 +27,6 @@ function facesToString(faces) {
 }
 
 function mapColors(faces) {
-  const colorMap = {
-    WHITE: "",
-    RED: "",
-    ORANGE: "",
-    YELLOW: "",
-    GREEN: "",
-    BLUE: "",
-  };
   for (let key in faces) {
     colorMap[faces[key][4]] = key;
   }
