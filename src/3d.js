@@ -1,20 +1,23 @@
+import {
+  CELL_GAP,
+  FACE_COLOR_POSITION,
+  FACE_ROTATION_AXIS,
+  FULL_FORM,
+} from "./constants";
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { RGBELoader } from "three/addons/loaders/RGBELoader.js";
 
-const axisMap = {
-  FRONT: [-1, 0, 0],
-  BACK: [1, 0, 0],
-  UP: [0, -1, 0],
-  DOWN: [0, 1, 0],
-  LEFT: [0, 0, -1],
-  RIGHT: [0, 0, 1],
-};
-
-let scene, camera, renderer, orbitControls;
-let cellObject;
-window.addEventListener("resize", onWindowResize);
+let scene,
+  camera,
+  renderer,
+  orbitControls,
+  cellObject,
+  assetsLoaded = false;
 
 init();
+resize3dCanvas();
+
 renderer.setAnimationLoop(animate);
 
 function init() {
@@ -29,7 +32,7 @@ function init() {
     0.1,
     1000
   );
-  camera.position.set(10, 15, 0);
+  camera.position.set(10, 10, 10);
 
   // renderer
   renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -38,6 +41,7 @@ function init() {
   renderer.outputEncoding = THREE.sRGBEncoding;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1;
+  renderer.domElement.className = "3d-canvas";
   document.body.appendChild(renderer.domElement);
 
   // orbit controls
@@ -49,6 +53,15 @@ function init() {
   const axesHelper = new THREE.AxesHelper(5);
   axesHelper.name = "axisHelper";
   scene.add(axesHelper);
+
+  // light
+  // const directionalLight1 = new THREE.DirectionalLight(0xffffff, 0.5);
+  // directionalLight1.position.set(5, 5, 5);
+  // scene.add(directionalLight1);
+
+  // const directionalLight2 = new THREE.DirectionalLight(0xffffff, 0.5);
+  // directionalLight2.position.set(-5, -5, -5);
+  // scene.add(directionalLight2);
 }
 
 function animate() {
@@ -56,30 +69,46 @@ function animate() {
   orbitControls.update();
 }
 
-function onWindowResize() {
-  camera.aspect = window.innerWidth / window.innerHeight;
+export function resize3dCanvas(
+  width = window.innerWidth,
+  height = window.innerHeight / 2
+) {
+  camera.aspect = width / height;
   camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setSize(width, height);
 }
 
-function rotateSide(side, dir) {
+export async function executeMoves(moves, fast = false) {
+  moves = moves.split(" ");
+  const next = moves.map((move) => {
+    const face = FULL_FORM[move[0]];
+    let turn = 1;
+    if (move.length > 1) turn = move[1] === "2" ? 2 : -1;
+    return { face, turn, fast };
+  });
+  next.reverse();
+  while (next.length > 0) await rotateSide(next.pop());
+}
+
+export function rotateSide({ face, turn, fast = false }) {
   return new Promise((res) => {
     const cellsToRotate = scene.children.filter((child) =>
-      child.name.includes(side)
+      child.name.includes(face)
     );
-    const axis = new THREE.Vector3(...axisMap[side]);
-    const angle = Math.PI / 2;
-    rotateAnimation(cellsToRotate, axis, angle, dir, res);
+    const axis = new THREE.Vector3(...FACE_ROTATION_AXIS[face]);
+    const angle = 90 * Math.abs(turn);
+    const step = (turn / Math.abs(turn)) * (fast ? 2 : 0.5);
+    rotateAnimation(cellsToRotate, axis, angle, step, res);
   });
 }
 
-function rotateAnimation(cellsToRotate, axis, angle, dir, res) {
+function rotateAnimation(cellsToRotate, axis, angle, step, res) {
   cellsToRotate.forEach((cell) => {
-    cell.rotateOnAxis(axis, dir * Math.min(0.01, angle));
+    cell.rotateOnAxis(axis, THREE.MathUtils.degToRad(step));
   });
-  angle -= 0.01;
+  angle -= Math.abs(step);
   if (angle > 0)
-    setTimeout(() => rotateAnimation(cellsToRotate, axis, angle, dir, res), 0);
+    setTimeout(() => rotateAnimation(cellsToRotate, axis, angle, step, res), 0);
   else {
     updatePositions(cellsToRotate);
     updateCellNames();
@@ -97,53 +126,105 @@ function updatePositions(cellsToUpdate) {
   });
 }
 
-export async function createCube() {
-  if (!cellObject) await loadAssets();
-  const gap = 1.02;
-  for (let x = -gap; x <= gap; x += gap) {
-    for (let y = -gap; y <= gap; y += gap) {
-      for (let z = -gap; z <= gap; z += gap) {
+export async function createCube(faces) {
+  if (!assetsLoaded) {
+    await loadAssets();
+    assetsLoaded = true;
+  }
+
+  clearScene();
+
+  for (let x = -CELL_GAP; x <= CELL_GAP; x += CELL_GAP) {
+    for (let y = -CELL_GAP; y <= CELL_GAP; y += CELL_GAP) {
+      for (let z = -CELL_GAP; z <= CELL_GAP; z += CELL_GAP) {
+        const parent = new THREE.Object3D();
+        parent.name = "cubeCellParent";
         const cell = cellObject.clone();
         cell.position.set(x, y, z);
         cell.name = "cubeCell";
-        const parent = new THREE.Object3D();
-        parent.name = "cubeCellParent";
         parent.add(cell);
         scene.add(parent);
       }
     }
   }
+
+  for (let key in faces) {
+    const face = faces[key];
+    const { start, delCol, delRow } = FACE_COLOR_POSITION[key];
+    face.forEach((color, i) => {
+      const row = Math.floor(i / 3);
+      const col = i % 3;
+      const pos = start.map(
+        (_, i) => start[i] + row * delRow[i] + col * delCol[i]
+      );
+      const parent = new THREE.Object3D();
+      parent.name = "cubeColorParent";
+      const colorObject = new THREE.Mesh(
+        new THREE.BoxGeometry(0.8, 0.8, 0.8),
+        new THREE.MeshStandardMaterial({
+          color: new THREE.Color(color.toLowerCase()),
+          roughness: 0,
+          metalness: 0.2,
+        })
+      );
+      colorObject.position.set(...pos);
+      colorObject.name = "cubeColor";
+      parent.add(colorObject);
+      scene.add(parent);
+    });
+  }
   updateCellNames();
-  await rotateSide("FRONT", +1);
-  await rotateSide("FRONT", -1);
-  await rotateSide("LEFT", 1);
-  await rotateSide("BACK", 1);
-  await rotateSide("UP", +1);
-  await rotateSide("DOWN", -1);
-  await rotateSide("RIGHT", 1);
-  await rotateSide("BACK", 1);
 }
 
 function loadAssets() {
-  const loader = new THREE.BufferGeometryLoader();
-  return new Promise((res, rej) => {
-    loader.load(
-      "/3dModels/cube.json",
-      function (cellGeometry) {
-        const material = new THREE.MeshMatcapMaterial();
-        cellObject = new THREE.Mesh(cellGeometry, material);
-        console.log(cellObject);
-        res();
-      },
-      (xhr) => console.log((xhr.loaded / xhr.total) * 100 + "% loaded"),
-      (err) => rej(err)
-    );
-  });
+  const promises = [];
+
+  promises.push(
+    new Promise((res, rej) => {
+      const loader = new THREE.BufferGeometryLoader();
+      loader.load(
+        "/3dModels/cube.json",
+        function (cellGeometry) {
+          const material = new THREE.MeshStandardMaterial({
+            color: new THREE.Color(0x1f1f1f),
+            roughness: 0,
+            metalness: 0.1,
+          });
+          cellObject = new THREE.Mesh(cellGeometry, material);
+          res();
+        },
+        (xhr) => console.log((xhr.loaded / xhr.total) * 100 + "% loaded"),
+        (err) => rej(err)
+      );
+    })
+  );
+
+  promises.push(
+    new Promise((res, rej) => {
+      const rgbeLoader = new RGBELoader();
+      rgbeLoader.load(
+        `/3dModels/blouberg_sunrise_2_1k.hdr`,
+        (texture) => {
+          texture.mapping = THREE.EquirectangularReflectionMapping;
+          scene.background = texture;
+          scene.environment = texture;
+          res();
+        },
+        (xhr) => console.log((xhr.loaded / xhr.total) * 100 + "% loaded"),
+        // undefined,
+        (error) => rej(error)
+      );
+    })
+  );
+
+  return Promise.all(promises);
 }
 
 function updateCellNames() {
-  const parents = scene.children.filter((child) =>
-    child.name.includes("cubeCellParent")
+  const parents = scene.children.filter(
+    (child) =>
+      child.name.startsWith("cubeCellParent") ||
+      child.name.startsWith("cubeColorParent")
   );
   parents.forEach((parent) => {
     const { x, y, z } = parent.children[0].position;
@@ -156,4 +237,14 @@ function updateCellNames() {
     else if (z < -0.5) name += " RIGHT";
     parent.name = name;
   });
+}
+
+function clearScene() {
+  scene.children
+    .filter(
+      (child) =>
+        child.name.startsWith("cubeCellParent") ||
+        child.name.startsWith("cubeColorParent")
+    )
+    .forEach((child) => scene.remove(child));
 }

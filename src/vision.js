@@ -1,4 +1,4 @@
-import { faces, colorRanges, RED_END } from "./constants";
+import { COLOR_HSV_RANGE, RED_END, SCAN_ORDER } from "./constants";
 import cv from "./opencv.js";
 
 const width = 640;
@@ -9,24 +9,25 @@ const frameDelay = 1000 / FPS;
 const canvasEl = document.createElement("canvas");
 canvasEl.width = width;
 canvasEl.height = height;
+canvasEl.className = "vision-canvas";
 document.body.appendChild(canvasEl);
 const context = canvasEl.getContext("2d", { willReadFrequently: true });
 context.strokeStyle = "black";
 context.lineWidth = 1;
 context.font = "16px Arial";
 
-const canvasOutputEl = document.createElement("canvas");
-canvasOutputEl.width = width;
-canvasOutputEl.height = height;
-document.body.appendChild(canvasOutputEl);
+// const canvasOutputEl = document.createElement("canvas");
+// canvasOutputEl.width = width;
+// canvasOutputEl.height = height;
+// document.body.appendChild(canvasOutputEl);
 
 let stream = null;
 const videoEl = document.createElement("video");
 
 const confirmButtonEl = document.querySelector("#confirm");
 const rescanButtonEl = document.querySelector("#rescan");
-// const trackbars = document.querySelectorAll("input");
-// const valuesEl = document.querySelector("#values");
+const trackbars = document.querySelectorAll("input");
+const valuesEl = document.querySelector("#values");
 
 function startCamera() {
   if (stream !== null) return;
@@ -58,27 +59,22 @@ function stopCamera() {
   stream = null;
 }
 
-export async function scanFaces() {
-  for (let key in faces) {
-    console.log(key);
-    faces[key] = await scan();
-    console.log(faces[key]);
+export async function scanFaces(faces, createCube) {
+  startCamera();
+  for (let face of SCAN_ORDER) {
+    console.log(face);
+    faces[face] = await scan();
+    console.log(faces[face]);
+    if (createCube) createCube(faces);
   }
+  stopCamera();
 }
 
 function scan() {
-  startCamera();
   return new Promise((res, rej) => {
     const face = captureFace();
     if (face === null) scanLoop(res);
-    else {
-      confirmButtonEl.addEventListener("click", () => comfirmScan(res, face), {
-        once: true,
-      });
-      rescanButtonEl.addEventListener("click", () => scanLoop(res), {
-        once: true,
-      });
-    }
+    else userConfirmation(res, face);
   });
 }
 
@@ -86,9 +82,25 @@ function scanLoop(res) {
   setTimeout(async () => res(await scan()), frameDelay);
 }
 
-function comfirmScan(res, face) {
-  stopCamera();
-  res(face);
+function userConfirmation(res, face) {
+  function confirm() {
+    rescanButtonEl.removeEventListener("click", rescan, {
+      once: true,
+    });
+    res(face);
+  }
+  function rescan() {
+    confirmButtonEl.removeEventListener("click", confirm, {
+      once: true,
+    });
+    scanLoop(res);
+  }
+  confirmButtonEl.addEventListener("click", confirm, {
+    once: true,
+  });
+  rescanButtonEl.addEventListener("click", rescan, {
+    once: true,
+  });
 }
 
 function captureFace() {
@@ -100,7 +112,7 @@ function captureFace() {
   src.delete();
 
   const squares = [];
-  for (const key in colorRanges) {
+  for (const key in COLOR_HSV_RANGE) {
     squares.push(...getCells(hsv, key));
   }
 
@@ -116,7 +128,7 @@ function captureFace() {
 }
 
 function getCells(hsv, color) {
-  const colorRange = colorRanges[color];
+  const colorRange = COLOR_HSV_RANGE[color];
 
   const low = new cv.Mat(hsv.rows, hsv.cols, hsv.type(), [
     colorRange.minHue,
@@ -184,7 +196,7 @@ function getCells(hsv, color) {
 
   // const dst = new cv.Mat();
   // cv.bitwise_and(hsv, hsv, dst, mask);
-  // if (color === "BLUE") cv.imshow(canvasOutputEl, dst);
+  // if (color === "ORANGE") cv.imshow(canvasOutputEl, dst);
   // dst.delete();
 
   const contours = new cv.MatVector();
