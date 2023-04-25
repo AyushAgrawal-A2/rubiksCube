@@ -23,6 +23,7 @@ context.font = "16px Arial";
 
 let stream = null;
 const videoEl = document.createElement("video");
+videoEl.playsInline = true;
 
 const confirmButtonEl = document.querySelector("#confirm");
 const rescanButtonEl = document.querySelector("#rescan");
