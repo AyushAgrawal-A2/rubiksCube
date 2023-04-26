@@ -12,6 +12,7 @@ let scene,
   camera,
   renderer,
   orbitControls,
+  cubeObject,
   cellObject,
   assetsLoaded = false;
 
@@ -27,12 +28,12 @@ function init() {
 
   //camera
   camera = new THREE.PerspectiveCamera(
-    45,
+    35,
     window.innerWidth / window.innerHeight,
     0.1,
     1000
   );
-  camera.position.set(10, 10, 10);
+  camera.position.set(5, 5, 5);
 
   // renderer
   renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -49,10 +50,15 @@ function init() {
   orbitControls.enablePan = false;
   orbitControls.update();
 
+  // rubiks cube
+  cubeObject = new THREE.Object3D();
+  cubeObject.name = "Rubik's Cube";
+  scene.add(cubeObject);
+
   //axis helper
-  const axesHelper = new THREE.AxesHelper(5);
-  axesHelper.name = "axisHelper";
-  scene.add(axesHelper);
+  // const axesHelper = new THREE.AxesHelper(5);
+  // axesHelper.name = "axisHelper";
+  // scene.add(axesHelper);
 
   // light
   // const directionalLight1 = new THREE.DirectionalLight(0xffffff, 0.5);
@@ -78,37 +84,40 @@ export function resize3dCanvas(
   renderer.setSize(width, height);
 }
 
-export async function executeMoves(moves, fast = false) {
-  moves = moves.split(" ");
-  const next = moves.map((move) => {
-    const face = FULL_FORM[move[0]];
-    let turn = 1;
-    if (move.length > 1) turn = move[1] === "2" ? 2 : -1;
-    return { face, turn, fast };
+export function executeMoves(moves, fast = false, reverse = false) {
+  return new Promise(async (res) => {
+    moves = moves.split(" ");
+    const next = moves.map((move) => {
+      const face = FULL_FORM[move[0]];
+      const turn = move.length === 1 ? 1 : move[1] === "2" ? 2 : -1;
+      return { face, turn, fast, reverse };
+    });
+    if (!reverse) next.reverse();
+    while (next.length > 0) await rotateSide(next.pop());
+    res();
   });
-  next.reverse();
-  while (next.length > 0) await rotateSide(next.pop());
 }
 
-export function rotateSide({ face, turn, fast = false }) {
+function rotateSide({ face, turn, fast, reverse }) {
   return new Promise((res) => {
-    const cellsToRotate = scene.children.filter((child) =>
+    const cellsToRotate = cubeObject.children.filter((child) =>
       child.name.includes(face)
     );
     const axis = new THREE.Vector3(...FACE_ROTATION_AXIS[face]);
     const angle = 90 * Math.abs(turn);
-    const step = (turn / Math.abs(turn)) * (fast ? 2 : 0.5);
-    rotateAnimation(cellsToRotate, axis, angle, step, res);
+    const step =
+      (turn / Math.abs(turn)) * (fast ? 3 : 0.5) * (reverse ? -1 : 1);
+    rotateSideStep(cellsToRotate, axis, angle, step, res);
   });
 }
 
-function rotateAnimation(cellsToRotate, axis, angle, step, res) {
+function rotateSideStep(cellsToRotate, axis, angle, step, res) {
   cellsToRotate.forEach((cell) => {
     cell.rotateOnAxis(axis, THREE.MathUtils.degToRad(step));
   });
   angle -= Math.abs(step);
   if (angle > 0)
-    setTimeout(() => rotateAnimation(cellsToRotate, axis, angle, step, res), 0);
+    setTimeout(() => rotateSideStep(cellsToRotate, axis, angle, step, res), 0);
   else {
     updatePositions(cellsToRotate);
     updateCellNames();
@@ -126,7 +135,7 @@ function updatePositions(cellsToUpdate) {
   });
 }
 
-export async function createCube(faces) {
+export async function createCube(faces, showFace) {
   if (!assetsLoaded) {
     await loadAssets();
     assetsLoaded = true;
@@ -143,7 +152,7 @@ export async function createCube(faces) {
         cell.position.set(x, y, z);
         cell.name = "cubeCell";
         parent.add(cell);
-        scene.add(parent);
+        cubeObject.add(parent);
       }
     }
   }
@@ -170,10 +179,11 @@ export async function createCube(faces) {
       colorObject.position.set(...pos);
       colorObject.name = "cubeColor";
       parent.add(colorObject);
-      scene.add(parent);
+      cubeObject.add(parent);
     });
   }
   updateCellNames();
+  positionCamera(showFace);
 }
 
 function loadAssets() {
@@ -188,7 +198,6 @@ function loadAssets() {
           const material = new THREE.MeshStandardMaterial({
             color: new THREE.Color(0x1f1f1f),
             roughness: 0,
-            metalness: 0.1,
           });
           cellObject = new THREE.Mesh(cellGeometry, material);
           res();
@@ -221,12 +230,7 @@ function loadAssets() {
 }
 
 function updateCellNames() {
-  const parents = scene.children.filter(
-    (child) =>
-      child.name.startsWith("cubeCellParent") ||
-      child.name.startsWith("cubeColorParent")
-  );
-  parents.forEach((parent) => {
+  cubeObject.children.forEach((parent) => {
     const { x, y, z } = parent.children[0].position;
     let name = "cubeCellParent";
     if (x > 0.5) name += " FRONT";
@@ -240,11 +244,18 @@ function updateCellNames() {
 }
 
 function clearScene() {
-  scene.children
-    .filter(
-      (child) =>
-        child.name.startsWith("cubeCellParent") ||
-        child.name.startsWith("cubeColorParent")
-    )
-    .forEach((child) => scene.remove(child));
+  while (cubeObject.children.length > 0)
+    cubeObject.remove(cubeObject.children[0]);
+}
+
+function positionCamera(showFace) {
+  let cameraPosition = [5, 5, 5];
+  let cubeRotation = [0, 0, 0];
+  if (showFace) {
+    cameraPosition = FACE_ROTATION_AXIS[showFace].map((val) => -7.5 * val);
+    if (showFace === "UP" || showFace === "DOWN")
+      cubeRotation = [0, -Math.PI / 2, 0];
+  }
+  camera.position.set(...cameraPosition);
+  cubeObject.rotation.set(...cubeRotation);
 }

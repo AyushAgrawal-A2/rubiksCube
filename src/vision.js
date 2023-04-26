@@ -1,38 +1,34 @@
-import { COLOR_HSV_RANGE, RED_END, SCAN_ORDER } from "./constants";
-import cv from "./opencv.js";
+import { SCAN_ORDER } from "./constants";
+import { createCube } from "./3d";
 
-const width = 640;
-const height = 640;
-const FPS = 30;
-const frameDelay = 1000 / FPS;
+const worker = new Worker(new URL("./vision.worker.js", import.meta.url), {
+  type: "module",
+});
 
-const canvasEl = document.createElement("canvas");
-canvasEl.width = width;
-canvasEl.height = height;
-canvasEl.className = "vision-canvas";
-document.body.appendChild(canvasEl);
-const context = canvasEl.getContext("2d", { willReadFrequently: true });
-context.strokeStyle = "black";
-context.lineWidth = 1;
-context.font = "16px Arial";
-
-// const canvasOutputEl = document.createElement("canvas");
-// canvasOutputEl.width = width;
-// canvasOutputEl.height = height;
-// document.body.appendChild(canvasOutputEl);
+const width = 480;
+const height = 480;
 
 let stream = null;
-const videoEl = document.createElement("video");
-videoEl.playsInline = true;
+let videoEl;
+let canvasEl;
+let context;
 
-const confirmButtonEl = document.querySelector("#confirm");
-const rescanButtonEl = document.querySelector("#rescan");
-const trackbars = document.querySelectorAll("input");
-const valuesEl = document.querySelector("#values");
+const videoContainerEl = document.querySelector("#video-container");
+const controlsEl = document.querySelector("#controls");
 
 function startCamera() {
-  if (stream !== null) return;
-  stream = [];
+  if (stream !== null || stream === "Starting Camera") return;
+  stream = "Starting Camera";
+
+  videoEl = document.createElement("video");
+  videoEl.playsInline = true;
+  videoContainerEl.appendChild(videoEl);
+
+  const canvasEl = document.createElement("canvas");
+  canvasEl.width = width;
+  canvasEl.height = height;
+  context = canvasEl.getContext("2d", { willReadFrequently: true });
+
   navigator.mediaDevices
     .getUserMedia({
       video: {
@@ -56,186 +52,99 @@ function startCamera() {
 }
 
 function stopCamera() {
-  stream?.getTracks?.().forEach((track) => track.stop());
+  if (stream === null || stream === "Starting Camera") return;
+  stream.getTracks().forEach((track) => track.stop());
   stream = null;
+  videoEl.remove();
+  context = null;
+  videoContainerEl.innerHTML = "";
 }
 
-export async function scanFaces(faces, createCube) {
+export async function scanFaces(faces, faceIdx = 0) {
+  createCube(faces);
+
+  if (faceIdx >= 6) {
+    stopCamera();
+    return;
+  }
+
   startCamera();
-  for (let face of SCAN_ORDER) {
-    console.log(face);
-    faces[face] = await scan();
-    console.log(faces[face]);
-    if (createCube) createCube(faces);
-  }
-  stopCamera();
+
+  const face = SCAN_ORDER[faceIdx];
+  console.log(face);
+  worker.onmessage = ({ data: squares }) => {
+    displayRect(squares);
+    if (squares.length === 9) {
+      faces[face] = processSquares(squares);
+      createCube(faces, face);
+      userConfirmation(
+        () => scanFaces(faces, faceIdx + 1),
+        () => {
+          delete faces[face];
+          createCube(faces, face);
+          scanNextFrame();
+        }
+      );
+    } else scanNextFrame();
+  };
+  scanNextFrame();
 }
 
-function scan() {
-  return new Promise((res, rej) => {
-    const face = captureFace();
-    if (face === null) scanLoop(res);
-    else userConfirmation(res, face);
-  });
-}
-
-function scanLoop(res) {
-  setTimeout(async () => res(await scan()), frameDelay);
-}
-
-function userConfirmation(res, face) {
-  function confirm() {
-    rescanButtonEl.removeEventListener("click", rescan, {
-      once: true,
-    });
-    res(face);
-  }
-  function rescan() {
-    confirmButtonEl.removeEventListener("click", confirm, {
-      once: true,
-    });
-    scanLoop(res);
-  }
-  confirmButtonEl.addEventListener("click", confirm, {
-    once: true,
-  });
-  rescanButtonEl.addEventListener("click", rescan, {
-    once: true,
-  });
-}
-
-function captureFace() {
+function scanNextFrame() {
   context.drawImage(videoEl, 0, 0, width, height);
-  const src = new cv.Mat(height, width, cv.CV_8UC4);
-  src.data.set(context.getImageData(0, 0, width, height).data);
-  const hsv = new cv.Mat();
-  cv.cvtColor(src, hsv, cv.COLOR_RGB2HSV, 0);
-  src.delete();
-
-  const squares = [];
-  for (const key in COLOR_HSV_RANGE) {
-    squares.push(...getCells(hsv, key));
-  }
-
-  for (const { x, y, width, height, color } of squares) {
-    context.strokeRect(x, y, width, height);
-    context.strokeText(color, x + 10, y + 25);
-  }
-
-  hsv.delete();
-
-  if (squares.length === 9) return processSquares(squares);
-  else return null;
+  worker.postMessage({
+    srcData: context.getImageData(0, 0, width, height).data,
+    width,
+    height,
+  });
 }
 
-function getCells(hsv, color) {
-  const colorRange = COLOR_HSV_RANGE[color];
+function displayRect(squares) {
+  clearRect();
 
-  const low = new cv.Mat(hsv.rows, hsv.cols, hsv.type(), [
-    colorRange.minHue,
-    colorRange.minSat,
-    colorRange.minVal,
-    colorRange.minAlp,
-  ]);
-  const high = new cv.Mat(hsv.rows, hsv.cols, hsv.type(), [
-    colorRange.maxHue,
-    colorRange.maxSat,
-    colorRange.maxVal,
-    colorRange.maxAlp,
-  ]);
+  squares.forEach((square) => {
+    const rectEl = document.createElement("div");
+    rectEl.className = "faceRect";
+    rectEl.style.top = square.y + "px";
+    rectEl.style.left = square.x + "px";
+    rectEl.style.width = square.width + "px";
+    rectEl.style.height = square.height + "px";
+    rectEl.textContent = square.color;
+    videoContainerEl.appendChild(rectEl);
+  });
+}
 
-  // const low = new cv.Mat(hsv.rows, hsv.cols, hsv.type(), [
-  //   parseInt(trackbars[0].value),
-  //   parseInt(trackbars[2].value),
-  //   parseInt(trackbars[4].value),
-  //   colorRange.minAlp,
-  // ]);
-  // const high = new cv.Mat(hsv.rows, hsv.cols, hsv.type(), [
-  //   parseInt(trackbars[1].value),
-  //   parseInt(trackbars[3].value),
-  //   parseInt(trackbars[5].value),
-  //   colorRange.maxAlp,
-  // ]);
-  // valuesEl.textContent =
-  //   trackbars[0].value +
-  //   " " +
-  //   trackbars[1].value +
-  //   " " +
-  //   trackbars[2].value +
-  //   " " +
-  //   trackbars[3].value +
-  //   " " +
-  //   trackbars[4].value +
-  //   " " +
-  //   trackbars[5].value;
+function clearRect() {
+  videoContainerEl
+    .querySelectorAll(".faceRect")
+    .forEach((rectEl) => rectEl.remove());
+}
 
-  const mask = new cv.Mat();
-  cv.inRange(hsv, low, high, mask);
-  low.delete();
-  high.delete();
+function userConfirmation(onConfirm, onRescan) {
+  const rescanButtonEl = document.createElement("button");
+  rescanButtonEl.textContent = "Rescan";
+  rescanButtonEl.className = "faceConfirmation";
+  rescanButtonEl.addEventListener("click", () => {
+    removeButtons();
+    onRescan();
+  });
 
-  if (color === "RED") {
-    const low_end = new cv.Mat(hsv.rows, hsv.cols, hsv.type(), [
-      RED_END.minHue,
-      RED_END.minSat,
-      RED_END.minVal,
-      RED_END.minAlp,
-    ]);
-    const high_end = new cv.Mat(hsv.rows, hsv.cols, hsv.type(), [
-      RED_END.maxHue,
-      RED_END.maxSat,
-      RED_END.maxVal,
-      RED_END.maxAlp,
-    ]);
-    const mask_end = new cv.Mat();
-    cv.inRange(hsv, low_end, high_end, mask_end);
-    cv.bitwise_or(mask, mask_end, mask);
-    low_end.delete();
-    high_end.delete();
-    mask_end.delete();
-  }
+  const confirmButtonEl = document.createElement("button");
+  confirmButtonEl.textContent = "Confirm";
+  confirmButtonEl.className = "faceConfirmation";
+  confirmButtonEl.addEventListener("click", () => {
+    removeButtons();
+    onConfirm();
+  });
 
-  // const dst = new cv.Mat();
-  // cv.bitwise_and(hsv, hsv, dst, mask);
-  // if (color === "ORANGE") cv.imshow(canvasOutputEl, dst);
-  // dst.delete();
+  controlsEl.appendChild(rescanButtonEl);
+  controlsEl.appendChild(confirmButtonEl);
+}
 
-  const contours = new cv.MatVector();
-  const hierarchy = new cv.Mat();
-  cv.findContours(
-    mask,
-    contours,
-    hierarchy,
-    cv.RETR_EXTERNAL,
-    cv.CHAIN_APPROX_SIMPLE
-  );
-  mask.delete();
-  hierarchy.delete();
-
-  const squares = [];
-  for (let i = 0; i < contours.size(); i++) {
-    const contour = contours.get(i);
-    const area = cv.contourArea(contour);
-    if (area > (width * height) / 40 && area < (width * height) / 9) {
-      const { x, y, width, height } = cv.boundingRect(contour);
-      const aspectRatio = width / height;
-      if (
-        aspectRatio > 0.9 &&
-        aspectRatio < 1.1 &&
-        area > 0.8 * width * height
-      ) {
-        squares.push({
-          x,
-          y,
-          width,
-          height,
-          color,
-        });
-      }
-    }
-  }
-  contours.delete();
-  return squares;
+function removeButtons() {
+  controlsEl
+    .querySelectorAll(".faceConfirmation")
+    .forEach((button) => button.remove());
 }
 
 function processSquares(squares) {

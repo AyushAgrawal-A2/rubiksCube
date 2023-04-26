@@ -2,10 +2,11 @@ import { scanFaces } from "./vision.js";
 import { getIdentityCube, getScrambleMoves, getCubeSolution } from "./cube.js";
 import { createCube, executeMoves, resize3dCanvas } from "./3d.js";
 
+const controlsEl = document.querySelector("#controls");
 const scanButtonEl = document.querySelector("#scan");
 const solveButtonEl = document.querySelector("#solve");
-const resetCubeButtonEl = document.querySelector("#resetCube");
-const scrambleCubeButtonEl = document.querySelector("#scrambleCube");
+const resetCubeButtonEl = document.querySelector("#reset");
+const scrambleCubeButtonEl = document.querySelector("#scramble");
 const solutionEl = document.querySelector("#solution");
 
 scanButtonEl.addEventListener("click", scan);
@@ -13,7 +14,7 @@ resetCubeButtonEl.addEventListener("click", resetCube);
 scrambleCubeButtonEl.addEventListener("click", scrambleCube);
 solveButtonEl.addEventListener("click", solveCube);
 
-window.addEventListener("resize", resize3dCanvas);
+window.addEventListener("resize", () => resize3dCanvas());
 
 let faces = {};
 
@@ -25,8 +26,7 @@ function init() {
 
 function scan() {
   faces = {};
-  createCube(faces);
-  scanFaces(faces, createCube);
+  scanFaces(faces);
 }
 
 function resetCube() {
@@ -34,14 +34,68 @@ function resetCube() {
   createCube(faces);
 }
 
-function scrambleCube() {
-  const { scramblefaces, moves } = getScrambleMoves();
+async function scrambleCube() {
+  disableButtons();
+  resetCube();
+  const { scramblefaces, moves } = getScrambleMoves(faces);
   faces = scramblefaces;
-  executeMoves(moves, true);
+  await executeMoves(moves, true);
+  enableButtons();
 }
 
-async function solveCube() {
-  const moves = await getCubeSolution(faces);
-  solutionEl.textContent = moves;
-  if (moves !== "Identity Cube") executeMoves(moves, true);
+function solveCube() {
+  getCubeSolution(faces, displaySolution);
+}
+
+async function displaySolution(response) {
+  solutionEl.textContent = response;
+  if (response === "Identity Cube" || response === "Invalid Cube") return;
+  disableButtons();
+  await executeMoves(response, true);
+  setTimeout(() => displayStepwiseSolution(response), 1000);
+}
+
+function displayStepwiseSolution(solution) {
+  createCube(faces);
+  const next = solution.split(" ");
+  next.reverse();
+  const prev = [];
+
+  const prevButtonEl = document.createElement("button");
+  prevButtonEl.textContent = "Previous";
+  prevButtonEl.className = "solutionStep";
+  prevButtonEl.addEventListener("click", async () => {
+    disableButtons();
+    const move = prev.pop();
+    next.push(move);
+    await executeMoves(move, false, true);
+    enableButtons();
+  });
+
+  const nextButtonEl = document.createElement("button");
+  nextButtonEl.textContent = "Next";
+  nextButtonEl.className = "solutionStep";
+  nextButtonEl.addEventListener("click", async () => {
+    disableButtons();
+    const move = next.pop();
+    prev.push(move);
+    await executeMoves(move);
+    enableButtons();
+  });
+
+  controlsEl.appendChild(prevButtonEl);
+  controlsEl.appendChild(nextButtonEl);
+  enableButtons();
+}
+
+function disableButtons() {
+  document
+    .querySelectorAll("button")
+    .forEach((button) => (button.disabled = true));
+}
+
+function enableButtons() {
+  document
+    .querySelectorAll("button")
+    .forEach((button) => (button.disabled = false));
 }

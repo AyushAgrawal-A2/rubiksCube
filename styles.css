@@ -10,3 +10,17 @@ button {
 input {
   width: 100vw;
 }
+
+#video-container {
+  position: relative;
+}
+
+.faceRect {
+  position: absolute;
+  border: 2px solid pink;
+  z-index: 1000;
+  color: pink;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}

@@ -1,19 +1,28 @@
 import { FULL_FORM, FACE_COLOR } from "./constants";
-import { Cube, solve, ActionList } from "kociemba-wasm";
+import { Cube, ActionList } from "kociemba-wasm";
 
-export function getCubeSolution(faces) {
-  return new Promise((res) => {
-    const cubeState = facesToString(faces);
-    let output;
-    if (cubeState === new Cube().toString()) output = "Identity Cube";
-    else output = solve(cubeState);
-    res(output);
-  });
+const worker = new Worker(new URL("./cube.worker.js", import.meta.url), {
+  type: "module",
+});
+
+export function getCubeSolution(faces, callback) {
+  const cubeState = getCubeState(faces);
+  if (cubeState === "Invalid Cube") callback("Invalid Cube");
+  else if (cubeState === new Cube().toString()) {
+    callback("Identity Cube");
+  } else {
+    worker.onmessage = ({ data }) => {
+      if (data.length === 0) callback("Invalid Cube");
+      else callback(data);
+    };
+    worker.postMessage(cubeState);
+  }
 }
 
-function facesToString(faces) {
-  const color2Face = mapColors2Face(faces);
-  const facesString = stringifyFaces(color2Face, faces);
+function getCubeState(faces) {
+  const colorToFace = mapColorsToFace(faces);
+  if (Object.keys(colorToFace).length !== 6) return "Invalid Cube";
+  const facesString = stringifyFaces(colorToFace, faces);
   const cubeState =
     facesString.UP +
     facesString.RIGHT +
@@ -24,20 +33,21 @@ function facesToString(faces) {
   return cubeState;
 }
 
-function mapColors2Face(faces) {
-  const color2Face = {};
+function mapColorsToFace(faces) {
+  const colorToFace = {};
   for (let key in faces) {
-    color2Face[faces[key][4]] = key;
+    colorToFace[faces[key][4]] = key;
   }
-  return color2Face;
+  return colorToFace;
 }
 
-function stringifyFaces(color2Face, faces) {
+function stringifyFaces(colorToFace, faces) {
+  console.log(colorToFace);
   const facesString = { ...faces };
   for (let key in facesString) {
     let string = "";
     facesString[key].forEach((color) => {
-      string += color2Face[color][0];
+      string += colorToFace[color][0];
     });
     facesString[key] = string;
   }
@@ -51,7 +61,7 @@ export function getIdentityCube() {
   return faces;
 }
 
-export function getScrambleMoves() {
+export function getScrambleMoves(faces) {
   const cube = new Cube();
   const moves = [];
   for (let x = 0; x < 22; x++) {
