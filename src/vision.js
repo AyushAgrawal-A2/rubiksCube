@@ -1,6 +1,12 @@
-import { increaseProgress } from "./script";
+import {
+  hideTopControls,
+  increaseProgress,
+  showTopControls,
+  showVideo,
+} from "./script";
 import { SCAN_ORDER } from "./vision.constants";
 import { createCube } from "./3d";
+import { DoubleSide } from "three";
 
 const worker = new Worker(new URL("./vision.worker.js", import.meta.url), {
   type: "module",
@@ -24,13 +30,13 @@ const height = 480;
 
 let stream = null;
 let videoEl;
-let canvasEl;
 let context;
 
 const videoContainerEl = document.querySelector("#video-container");
-const controlsEl = document.querySelector("#controls");
+const controlsBottomEl = document.querySelector(".controls.controls-bottom");
 
 function startCamera() {
+  showVideo();
   if (stream !== null || stream === "Starting Camera") return;
   stream = "Starting Camera";
 
@@ -72,32 +78,30 @@ function stopCamera() {
   videoEl.remove();
   context = null;
   videoContainerEl.innerHTML = "";
+  controlsBottomEl.innerHTML = "";
 }
 
 export async function scanFaces(faces, faceIdx = 0) {
-  createCube(faces);
-
   if (faceIdx >= 6) {
-    stopCamera();
+    document.querySelector("#solve").hidden = false;
+    createCube(faces);
     return;
   }
-
-  startCamera();
-
+  hideTopControls();
   const face = SCAN_ORDER[faceIdx];
   console.log(face);
   processScanResult = (squares) => {
     displayRect(squares);
     if (squares.length === 9) {
+      stopCamera();
       faces[face] = processSquares(squares);
       createCube(faces, face);
       userConfirmation(
-        () => scanFaces(faces, faceIdx + 1),
         () => {
           delete faces[face];
-          createCube(faces, face);
           scanNextFrame();
-        }
+        },
+        () => scanFaces(faces, faceIdx + 1)
       );
     } else scanNextFrame();
   };
@@ -105,6 +109,7 @@ export async function scanFaces(faces, faceIdx = 0) {
 }
 
 function scanNextFrame() {
+  startCamera();
   context.drawImage(videoEl, 0, 0, width, height);
   worker.postMessage({
     event: "scanFrame",
@@ -137,31 +142,25 @@ function clearRect() {
     .forEach((rectEl) => rectEl.remove());
 }
 
-function userConfirmation(onConfirm, onRescan) {
+function userConfirmation(onRescan, onConfirm) {
   const rescanButtonEl = document.createElement("button");
-  rescanButtonEl.textContent = "Rescan";
+  rescanButtonEl.textContent = "Re-Scan";
   rescanButtonEl.className = "faceConfirmation";
   rescanButtonEl.addEventListener("click", () => {
-    removeButtons();
+    controlsBottomEl.innerHTML = "";
     onRescan();
   });
 
-  const confirmButtonEl = document.createElement("button");
+  const confirmButtonEl = rescanButtonEl.cloneNode();
   confirmButtonEl.textContent = "Confirm";
-  confirmButtonEl.className = "faceConfirmation";
   confirmButtonEl.addEventListener("click", () => {
-    removeButtons();
+    controlsBottomEl.innerHTML = "";
     onConfirm();
   });
 
-  controlsEl.appendChild(rescanButtonEl);
-  controlsEl.appendChild(confirmButtonEl);
-}
-
-function removeButtons() {
-  controlsEl
-    .querySelectorAll(".faceConfirmation")
-    .forEach((button) => button.remove());
+  controlsBottomEl.innerHTML = "";
+  controlsBottomEl.appendChild(rescanButtonEl);
+  controlsBottomEl.appendChild(confirmButtonEl);
 }
 
 function processSquares(squares) {
@@ -177,4 +176,9 @@ function processSquares(squares) {
   const face = [];
   temp.forEach((row) => row.forEach((cell) => face.push(cell.color)));
   return face;
+}
+
+export function stopScan() {
+  processScanResult = () => {};
+  stopCamera();
 }

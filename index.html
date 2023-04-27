@@ -11,17 +11,22 @@
 </head>
 
 <body>
-  <div id="controls">
-    <button id="scan">Scan</button>
-    <button id="reset">Reset</button>
-    <button id="scramble">Scramble</button>
-    <button id="solve">Solve</button>
-  </div>
-  <div id="solution"></div>
-  <div id="video-container"></div>
-  <div class="progress-container">
-    <div class="progress-bar">
-      <div class="progress" data-loaded="0" data-total="3"></div>
+  <div id="app-container">
+    <div class="controls controls-top">
+      <button id="scan">Scan</button>
+      <button id="solve">Solve</button>
+      <button id="scramble">Scramble</button>
+      <button id="reset">Reset</button>
+    </div>
+    <div id="status"></div>
+    <div id="threejs-container"></div>
+    <div id="video-container"></div>
+    <div class="controls controls-bottom">
+    </div>
+    <div id="progress-container">
+      <div id="progress-bar">
+        <div id="progress" data-loaded="0" data-total="3"></div>
+      </div>
     </div>
   </div>
 </body>

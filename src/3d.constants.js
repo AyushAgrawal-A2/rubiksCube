@@ -1,5 +1,7 @@
 export const CELL_GAP = 1.02;
+
 const COLOR_GAP = 0.12;
+
 export const FACE_COLOR_POSITION = {
   FRONT: {
     start: [CELL_GAP + COLOR_GAP, CELL_GAP, CELL_GAP],

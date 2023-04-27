@@ -1,4 +1,9 @@
-import { increaseProgress } from "./script";
+import {
+  disableButtons,
+  enableButtons,
+  increaseProgress,
+  show3d,
+} from "./script";
 import {
   CELL_GAP,
   FACE_COLOR_POSITION,
@@ -18,9 +23,6 @@ let scene,
   assetsLoaded = false;
 
 init();
-resize3dCanvas();
-
-renderer.setAnimationLoop(animate);
 
 function init() {
   //scene
@@ -34,7 +36,7 @@ function init() {
     0.1,
     1000
   );
-  camera.position.set(5, 5, 5);
+  camera.position.set(7.5, 7.5, 7.5);
 
   // renderer
   renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -42,9 +44,9 @@ function init() {
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.outputEncoding = THREE.sRGBEncoding;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1;
-  renderer.domElement.className = "3d-canvas";
-  document.body.appendChild(renderer.domElement);
+  renderer.toneMappingExposure = 0.5;
+  renderer.domElement.className = "THREEjs-Canvas";
+  document.querySelector("#threejs-container").appendChild(renderer.domElement);
 
   // orbit controls
   orbitControls = new OrbitControls(camera, renderer.domElement);
@@ -69,6 +71,8 @@ function init() {
   // const directionalLight2 = new THREE.DirectionalLight(0xffffff, 0.5);
   // directionalLight2.position.set(-5, -5, -5);
   // scene.add(directionalLight2);
+
+  renderer.setAnimationLoop(animate);
 }
 
 function animate() {
@@ -78,7 +82,7 @@ function animate() {
 
 export function resize3dCanvas(
   width = window.innerWidth,
-  height = window.innerHeight / 2
+  height = window.innerHeight
 ) {
   camera.aspect = width / height;
   camera.updateProjectionMatrix();
@@ -87,6 +91,7 @@ export function resize3dCanvas(
 
 export function executeMoves(moves, fast = false, reverse = false) {
   return new Promise(async (res) => {
+    disableButtons();
     moves = moves.split(" ");
     const next = moves.map((move) => {
       const face = FULL_FORM[move[0]];
@@ -95,6 +100,7 @@ export function executeMoves(moves, fast = false, reverse = false) {
     });
     if (!reverse) next.reverse();
     while (next.length > 0) await rotateSide(next.pop());
+    enableButtons();
     res();
   });
 }
@@ -173,8 +179,7 @@ export async function createCube(faces, showFace) {
         new THREE.BoxGeometry(0.8, 0.8, 0.8),
         new THREE.MeshStandardMaterial({
           color: new THREE.Color(color.toLowerCase()),
-          roughness: 0,
-          metalness: 0.2,
+          roughness: 0.05,
         })
       );
       colorObject.position.set(...pos);
@@ -183,8 +188,10 @@ export async function createCube(faces, showFace) {
       cubeObject.add(parent);
     });
   }
+
   updateCellNames();
   positionCamera(showFace);
+  show3d();
 }
 
 function loadAssets() {
@@ -215,7 +222,7 @@ function loadAssets() {
     new Promise((res, rej) => {
       const rgbeLoader = new RGBELoader();
       rgbeLoader.load(
-        `/3dModels/blouberg_sunrise_2_1k.hdr`,
+        `/3dModels/background.hdr`,
         (texture) => {
           texture.mapping = THREE.EquirectangularReflectionMapping;
           scene.background = texture;
@@ -253,10 +260,10 @@ function clearScene() {
 }
 
 function positionCamera(showFace) {
-  let cameraPosition = [5, 5, 5];
+  let cameraPosition = [7.5, 7.5, 7.5];
   let cubeRotation = [0, 0, 0];
   if (showFace) {
-    cameraPosition = FACE_ROTATION_AXIS[showFace].map((val) => -7.5 * val);
+    cameraPosition = FACE_ROTATION_AXIS[showFace].map((val) => -10 * val);
     if (showFace === "UP" || showFace === "DOWN")
       cubeRotation = [0, -Math.PI / 2, 0];
   }
