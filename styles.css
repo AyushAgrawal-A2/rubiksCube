@@ -1,6 +1,10 @@
 * {
-  margin: 0;
   box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background-color: black;
 }
 
 button {
@@ -23,4 +27,41 @@ input {
   display: flex;
   justify-content: center;
   align-items: center;
+}
+
+.progress-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: black;
+  z-index: 100;
+}
+
+.progress-bar {
+  position: absolute;
+  top: 85%;
+  left: 5%;
+  width: 90%;
+  padding: 5px;
+  background-color: transparent;
+  border: 5px solid grey;
+  border-radius: 1000000px;
+  box-shadow: 0 0 10px black;
+}
+
+.progress {
+  height: 2rem;
+  width: 0;
+  background-color: grey;
+  border-radius: 1000000px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 1.5rem;
+}
+
+.progress::before {
+  content: attr(data-percent);
 }

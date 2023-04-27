@@ -1,8 +1,12 @@
-import { COLOR_HSV_RANGE, RED_END } from "./constants.js";
-import cv from "./opencv.js";
+import { COLOR_HSV_RANGE, RED_UPPER } from "./vision.constants";
+import cv from "./opencv";
 
-onmessage = ({ data }) => {
-  captureFace(data);
+onmessage = ({ data: { event, payload } }) => {
+  switch (event) {
+    case "scanFrame":
+      captureFace(payload);
+      break;
+  }
 };
 
 function captureFace({ srcData, width, height }) {
@@ -18,7 +22,7 @@ function captureFace({ srcData, width, height }) {
   }
   hsv.delete();
 
-  postMessage(squares);
+  postMessage({ event: "scanResult", payload: squares });
 }
 
 function getCellsOfColor(color, hsv, width, height) {
@@ -44,16 +48,16 @@ function getCellsOfColor(color, hsv, width, height) {
 
   if (color === "RED") {
     const low_end = new cv.Mat(hsv.rows, hsv.cols, hsv.type(), [
-      RED_END.minHue,
-      RED_END.minSat,
-      RED_END.minVal,
-      RED_END.minAlp,
+      RED_UPPER.minHue,
+      RED_UPPER.minSat,
+      RED_UPPER.minVal,
+      RED_UPPER.minAlp,
     ]);
     const high_end = new cv.Mat(hsv.rows, hsv.cols, hsv.type(), [
-      RED_END.maxHue,
-      RED_END.maxSat,
-      RED_END.maxVal,
-      RED_END.maxAlp,
+      RED_UPPER.maxHue,
+      RED_UPPER.maxSat,
+      RED_UPPER.maxVal,
+      RED_UPPER.maxAlp,
     ]);
     const mask_end = new cv.Mat();
     cv.inRange(hsv, low_end, high_end, mask_end);

@@ -1,9 +1,23 @@
-import { SCAN_ORDER } from "./constants";
+import { increaseProgress } from "./script";
+import { SCAN_ORDER } from "./vision.constants";
 import { createCube } from "./3d";
 
 const worker = new Worker(new URL("./vision.worker.js", import.meta.url), {
   type: "module",
 });
+
+worker.onmessage = ({ data: { event, payload } }) => {
+  switch (event) {
+    case "loaded":
+      increaseProgress();
+      break;
+    case "scanResult":
+      processScanResult(payload);
+      break;
+  }
+};
+
+let processScanResult = () => {};
 
 const width = 480;
 const height = 480;
@@ -72,7 +86,7 @@ export async function scanFaces(faces, faceIdx = 0) {
 
   const face = SCAN_ORDER[faceIdx];
   console.log(face);
-  worker.onmessage = ({ data: squares }) => {
+  processScanResult = (squares) => {
     displayRect(squares);
     if (squares.length === 9) {
       faces[face] = processSquares(squares);
@@ -93,9 +107,12 @@ export async function scanFaces(faces, faceIdx = 0) {
 function scanNextFrame() {
   context.drawImage(videoEl, 0, 0, width, height);
   worker.postMessage({
-    srcData: context.getImageData(0, 0, width, height).data,
-    width,
-    height,
+    event: "scanFrame",
+    payload: {
+      srcData: context.getImageData(0, 0, width, height).data,
+      width,
+      height,
+    },
   });
 }
 

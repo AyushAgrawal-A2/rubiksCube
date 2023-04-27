@@ -99,3 +99,13 @@ function enableButtons() {
     .querySelectorAll("button")
     .forEach((button) => (button.disabled = false));
 }
+
+export function increaseProgress() {
+  const progress = document.querySelector(".progress");
+  progress.dataset.loaded++;
+  progress.dataset.percent =
+    Math.floor((progress.dataset.loaded / progress.dataset.total) * 100) + "%";
+  progress.style.width = progress.dataset.percent;
+  if (progress.dataset.percent === "100%")
+    document.querySelector(".progress-container").remove();
+}

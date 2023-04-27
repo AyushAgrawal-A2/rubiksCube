@@ -1,6 +1,14 @@
 import { solve } from "kociemba-wasm";
 
-onmessage = async ({ data }) => {
-  const output = await solve(data);
-  postMessage(output);
+onmessage = ({ data: { event, payload } }) => {
+  switch (event) {
+    case "solveCube":
+      solveCube(payload);
+      break;
+  }
 };
+
+async function solveCube(cubeState) {
+  const output = await solve(cubeState);
+  postMessage({ event: "cubeSolution", payload: output });
+}

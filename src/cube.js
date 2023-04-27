@@ -1,9 +1,19 @@
-import { FULL_FORM, FACE_COLOR } from "./constants";
+import { FULL_FORM, FACE_COLOR } from "./cube.constants";
 import { Cube, ActionList } from "kociemba-wasm";
 
 const worker = new Worker(new URL("./cube.worker.js", import.meta.url), {
   type: "module",
 });
+
+worker.onmessage = ({ data: { event, payload } }) => {
+  switch (event) {
+    case "cubeSolution":
+      processCubeSolution(payload);
+      break;
+  }
+};
+
+let processCubeSolution = () => {};
 
 export function getCubeSolution(faces, callback) {
   const cubeState = getCubeState(faces);
@@ -11,11 +21,11 @@ export function getCubeSolution(faces, callback) {
   else if (cubeState === new Cube().toString()) {
     callback("Identity Cube");
   } else {
-    worker.onmessage = ({ data }) => {
-      if (data.length === 0) callback("Invalid Cube");
-      else callback(data);
+    processCubeSolution = (output) => {
+      if (output.length === 0) callback("Invalid Cube");
+      else callback(output);
     };
-    worker.postMessage(cubeState);
+    worker.postMessage({ event: "solveCube", payload: cubeState });
   }
 }
 
@@ -42,7 +52,6 @@ function mapColorsToFace(faces) {
 }
 
 function stringifyFaces(colorToFace, faces) {
-  console.log(colorToFace);
   const facesString = { ...faces };
   for (let key in facesString) {
     let string = "";

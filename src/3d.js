@@ -1,9 +1,10 @@
+import { increaseProgress } from "./script";
 import {
   CELL_GAP,
   FACE_COLOR_POSITION,
   FACE_ROTATION_AXIS,
   FULL_FORM,
-} from "./constants";
+} from "./3d.constants";
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { RGBELoader } from "three/addons/loaders/RGBELoader.js";
@@ -200,9 +201,11 @@ function loadAssets() {
             roughness: 0,
           });
           cellObject = new THREE.Mesh(cellGeometry, material);
+          increaseProgress();
           res();
         },
-        (xhr) => console.log((xhr.loaded / xhr.total) * 100 + "% loaded"),
+        // (xhr) => console.log((xhr.loaded / xhr.total) * 100 + "% loaded"),
+        undefined,
         (err) => rej(err)
       );
     })
@@ -217,10 +220,11 @@ function loadAssets() {
           texture.mapping = THREE.EquirectangularReflectionMapping;
           scene.background = texture;
           scene.environment = texture;
+          increaseProgress();
           res();
         },
-        (xhr) => console.log((xhr.loaded / xhr.total) * 100 + "% loaded"),
-        // undefined,
+        // (xhr) => console.log((xhr.loaded / xhr.total) * 100 + "% loaded"),
+        undefined,
         (error) => rej(error)
       );
     })
