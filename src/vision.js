@@ -1,12 +1,6 @@
-import {
-  hideTopControls,
-  increaseProgress,
-  showTopControls,
-  showVideo,
-} from "./script";
+import { hideTopControls, increaseProgress, showVideo } from "./script";
 import { SCAN_ORDER } from "./vision.constants";
 import { createCube } from "./3d";
-import { DoubleSide } from "three";
 
 const worker = new Worker(new URL("./vision.worker.js", import.meta.url), {
   type: "module",

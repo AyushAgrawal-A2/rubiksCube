@@ -76,15 +76,16 @@ function getCellsOfColor(color, hsv, width, height) {
     cv.RETR_EXTERNAL,
     cv.CHAIN_APPROX_SIMPLE
   );
-  mask.delete();
   hierarchy.delete();
 
   const squares = [];
   for (let i = 0; i < contours.size(); i++) {
     const contour = contours.get(i);
-    const area = cv.contourArea(contour);
+    const rect = cv.boundingRect(contour);
+    const crop = mask.roi(rect);
+    const area = cv.countNonZero(crop);
     if (area > (width * height) / 40 && area < (width * height) / 9) {
-      const { x, y, width, height } = cv.boundingRect(contour);
+      const { x, y, width, height } = rect;
       const aspectRatio = width / height;
       if (
         aspectRatio > 0.9 &&
@@ -100,7 +101,9 @@ function getCellsOfColor(color, hsv, width, height) {
         });
       }
     }
+    crop.delete();
   }
+  mask.delete();
   contours.delete();
   return squares;
 }

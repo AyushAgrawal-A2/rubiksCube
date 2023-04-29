@@ -5,8 +5,8 @@ export const COLOR_HSV_RANGE = {
     minHue: 10,
     maxHue: 135,
     minSat: 0,
-    maxSat: 55,
-    minVal: 100,
+    maxSat: 75,
+    minVal: 75,
     maxVal: 255,
     minAlp: 0,
     maxAlp: 0,
@@ -14,7 +14,7 @@ export const COLOR_HSV_RANGE = {
   RED: {
     minHue: 0,
     maxHue: 3,
-    minSat: 75,
+    minSat: 125,
     maxSat: 255,
     minVal: 75,
     maxVal: 255,
@@ -65,8 +65,8 @@ export const COLOR_HSV_RANGE = {
 
 export const RED_UPPER = {
   minHue: 169,
-  maxHue: 179,
-  minSat: 75,
+  maxHue: 176,
+  minSat: 125,
   maxSat: 255,
   minVal: 75,
   maxVal: 255,
