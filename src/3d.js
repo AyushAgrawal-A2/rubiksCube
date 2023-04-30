@@ -58,19 +58,10 @@ function init() {
   cubeObject.name = "Rubik's Cube";
   scene.add(cubeObject);
 
-  //axis helper
-  // const axesHelper = new THREE.AxesHelper(5);
-  // axesHelper.name = "axisHelper";
-  // scene.add(axesHelper);
-
   // light
-  // const directionalLight1 = new THREE.DirectionalLight(0xffffff, 0.5);
-  // directionalLight1.position.set(5, 5, 5);
-  // scene.add(directionalLight1);
-
-  // const directionalLight2 = new THREE.DirectionalLight(0xffffff, 0.5);
-  // directionalLight2.position.set(-5, -5, -5);
-  // scene.add(directionalLight2);
+  const directionalLight1 = new THREE.DirectionalLight(0xffffff, 1);
+  directionalLight1.position.set(-5, -5, -5);
+  scene.add(directionalLight1);
 
   renderer.setAnimationLoop(animate);
 }

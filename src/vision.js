@@ -36,6 +36,7 @@ function startCamera() {
 
   videoEl = document.createElement("video");
   videoEl.playsInline = true;
+  videoContainerEl.innerHTML = "";
   videoContainerEl.appendChild(videoEl);
 
   const canvasEl = document.createElement("canvas");
