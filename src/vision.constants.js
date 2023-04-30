@@ -2,11 +2,11 @@ export const SCAN_ORDER = ["FRONT", "LEFT", "UP", "DOWN", "RIGHT", "BACK"];
 
 export const COLOR_HSV_RANGE = {
   WHITE: {
-    minHue: 10,
+    minHue: 0,
     maxHue: 135,
     minSat: 0,
-    maxSat: 75,
-    minVal: 75,
+    maxSat: 55,
+    minVal: 100,
     maxVal: 255,
     minAlp: 0,
     maxAlp: 0,
@@ -72,4 +72,49 @@ export const RED_UPPER = {
   maxVal: 255,
   minAlp: 0,
   maxAlp: 255,
+};
+
+export const faceOrientation = {
+  FRONT: {
+    CENTER: "Front",
+    LEFT: "←Left",
+    RIGHT: "Right→",
+    UP: "↑Up",
+    DOWN: "↓Down",
+  },
+  BACK: {
+    CENTER: "Back",
+    LEFT: "←Right",
+    RIGHT: "Left→",
+    UP: "↑Up",
+    DOWN: "↓Down",
+  },
+  LEFT: {
+    CENTER: "Left",
+    LEFT: "←Back",
+    RIGHT: "Front→",
+    UP: "↑Up",
+    DOWN: "↓Down",
+  },
+  RIGHT: {
+    CENTER: "Right",
+    LEFT: "←Front",
+    RIGHT: "Back→",
+    UP: "↑Up",
+    DOWN: "↓Down",
+  },
+  UP: {
+    CENTER: "Up",
+    LEFT: "←Left",
+    RIGHT: "Right→",
+    UP: "↑Back",
+    DOWN: "↓Front",
+  },
+  DOWN: {
+    CENTER: "Down",
+    LEFT: "←Left",
+    RIGHT: "Right→",
+    UP: "↑Front",
+    DOWN: "↓Back",
+  },
 };

@@ -18,12 +18,6 @@ const controlsBottomEl = document.querySelector(".controls.controls-bottom");
 
 window.addEventListener("resize", () => handleWindowResize());
 
-function handleWindowResize() {
-  const vh = window.innerHeight * 0.01;
-  document.documentElement.style.setProperty("--vh", `${vh}px`);
-  resize3dCanvas();
-}
-
 let faces = {};
 
 init();
@@ -31,6 +25,12 @@ init();
 function init() {
   handleWindowResize();
   reset();
+}
+
+function handleWindowResize() {
+  const vh = window.innerHeight * 0.01;
+  document.documentElement.style.setProperty("--vh", `${vh}px`);
+  resize3dCanvas();
 }
 
 function reset() {

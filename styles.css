@@ -9,14 +9,14 @@ body {
 }
 
 button {
-  margin: 1rem;
+  margin: 0.5rem;
   background-color: white;
   border: 1px solid black;
   border-radius: 100000px;
   padding: 0.5rem 1rem;
   cursor: pointer;
   font-weight: 600;
-  font-size: 1.5rem;
+  font-size: 1rem;
 }
 
 .controls {
@@ -24,9 +24,10 @@ button {
   left: 50%;
   translate: -50%;
   z-index: 1;
-  width: 100%;
+  width: 100vw;
   display: flex;
   justify-content: center;
+  flex-wrap: wrap;
   padding: 0.5rem;
 }
 
@@ -71,6 +72,42 @@ button {
   display: flex;
   justify-content: center;
   align-items: center;
+}
+
+.faceOrientation {
+  position: absolute;
+  opacity: 35%;
+
+}
+
+.faceOrientation.center {
+  top: 50%;
+  left: 50%;
+  translate: -50% -50%;
+}
+
+.faceOrientation.left {
+  top: 50%;
+  left: 0%;
+  translate: calc(0% + 10px) -50%;
+}
+
+.faceOrientation.right {
+  top: 50%;
+  left: 100%;
+  translate: calc(-100% - 10px) -50%;
+}
+
+.faceOrientation.up {
+  top: 0%;
+  left: 50%;
+  translate: -50% 10px;
+}
+
+.faceOrientation.down {
+  top: 100%;
+  left: 50%;
+  translate: -50% calc(-100% - 10px);
 }
 
 #progress-container {

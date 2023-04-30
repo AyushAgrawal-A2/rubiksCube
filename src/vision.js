@@ -1,5 +1,5 @@
 import { hideTopControls, increaseProgress, showVideo } from "./script";
-import { SCAN_ORDER } from "./vision.constants";
+import { SCAN_ORDER, faceOrientation } from "./vision.constants";
 import { createCube } from "./3d";
 
 const worker = new Worker(new URL("./vision.worker.js", import.meta.url), {
@@ -19,8 +19,8 @@ worker.onmessage = ({ data: { event, payload } }) => {
 
 let processScanResult = () => {};
 
-const width = 480;
-const height = 480;
+const width = 360;
+const height = 360;
 
 let stream = null;
 let videoEl;
@@ -28,8 +28,9 @@ let context;
 
 const videoContainerEl = document.querySelector("#video-container");
 const controlsBottomEl = document.querySelector(".controls.controls-bottom");
+const solveButtonEl = document.querySelector("#solve");
 
-function startCamera() {
+function startCamera(face) {
   showVideo();
   if (stream !== null || stream === "Starting Camera") return;
   stream = "Starting Camera";
@@ -38,6 +39,8 @@ function startCamera() {
   videoEl.playsInline = true;
   videoContainerEl.innerHTML = "";
   videoContainerEl.appendChild(videoEl);
+
+  displayFaceOrientation(face);
 
   const canvasEl = document.createElement("canvas");
   canvasEl.width = width;
@@ -69,42 +72,43 @@ function startCamera() {
 function stopCamera() {
   if (stream === null || stream === "Starting Camera") return;
   stream.getTracks().forEach((track) => track.stop());
-  stream = null;
-  videoEl.remove();
-  context = null;
   videoContainerEl.innerHTML = "";
   controlsBottomEl.innerHTML = "";
+  stream = null;
+  videoEl = null;
+  context = null;
 }
 
 export async function scanFaces(faces, faceIdx = 0) {
   if (faceIdx >= 6) {
-    document.querySelector("#solve").hidden = false;
+    solveButtonEl.hidden = false;
     createCube(faces);
     return;
   }
   hideTopControls();
   const face = SCAN_ORDER[faceIdx];
-  console.log(face);
+
   processScanResult = (squares) => {
     displayRect(squares);
     if (squares.length === 9) {
       stopCamera();
       faces[face] = processSquares(squares);
       createCube(faces, face);
-      userConfirmation(
+      displayUserConfirmation(
         () => {
           delete faces[face];
-          scanNextFrame();
+          scanNextFrame(face);
         },
         () => scanFaces(faces, faceIdx + 1)
       );
-    } else scanNextFrame();
+    } else scanNextFrame(face);
   };
-  scanNextFrame();
+
+  scanNextFrame(face);
 }
 
-function scanNextFrame() {
-  startCamera();
+function scanNextFrame(face) {
+  startCamera(face);
   context.drawImage(videoEl, 0, 0, width, height);
   worker.postMessage({
     event: "scanFrame",
@@ -114,6 +118,19 @@ function scanNextFrame() {
       height,
     },
   });
+}
+
+function displayFaceOrientation(face) {
+  const faceOrientEl = document.createElement("div");
+  faceOrientEl.className = "faceOrientation";
+
+  for (let key in faceOrientation[face]) {
+    const faceOrientElClone = faceOrientEl.cloneNode();
+    faceOrientElClone.classList.add(key.toLowerCase());
+    faceOrientElClone.textContent = faceOrientation[face][key];
+    videoContainerEl.appendChild(faceOrientElClone);
+    console.log(faceOrientElClone);
+  }
 }
 
 function displayRect(squares) {
@@ -137,7 +154,9 @@ function clearRect() {
     .forEach((rectEl) => rectEl.remove());
 }
 
-function userConfirmation(onRescan, onConfirm) {
+function displayUserConfirmation(onRescan, onConfirm) {
+  controlsBottomEl.innerHTML = "";
+
   const rescanButtonEl = document.createElement("button");
   rescanButtonEl.textContent = "Re-Scan";
   rescanButtonEl.className = "faceConfirmation";
@@ -153,7 +172,6 @@ function userConfirmation(onRescan, onConfirm) {
     onConfirm();
   });
 
-  controlsBottomEl.innerHTML = "";
   controlsBottomEl.appendChild(rescanButtonEl);
   controlsBottomEl.appendChild(confirmButtonEl);
 }
